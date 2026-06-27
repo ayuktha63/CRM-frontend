@@ -1,0 +1,32 @@
+<div class="login-page">
+  <div class="login-card">
+    <h1>Orque CRM</h1>
+    <p>Login to continue to your CRM dashboard</p>
+
+    <form (ngSubmit)="login()">
+      <label>Username or Email</label>
+      <input
+        type="text"
+        name="usernameOrEmail"
+        [(ngModel)]="usernameOrEmail"
+        placeholder="Enter username or email"
+      />
+
+      <label>Password</label>
+      <input
+        type="password"
+        name="password"
+        [(ngModel)]="password"
+        placeholder="Enter password"
+      />
+
+      <div class="error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <button type="submit" [disabled]="loading">
+        {{ loading ? 'Logging in...' : 'Login' }}
+      </button>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,66 @@
+<o-page-header
+  title="CRM Dashboard"
+  subtitle="Sales CRM analytics overview">
+</o-page-header>
+
+@if (loading) {
+  <p>Loading dashboard...</p>
+}
+
+@if (errorMessage) {
+  <p class="error">{{ errorMessage }}</p>
+}
+
+@if (summary) {
+  <section class="dashboard-grid">
+    <div class="metric-card">
+      <span>Total Contacts</span>
+      <strong>{{ summary.totalContacts }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <span>Total Leads</span>
+      <strong>{{ summary.totalLeads }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <span>Hot Leads</span>
+      <strong>{{ summary.hotLeads }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <span>Tasks Due Today</span>
+      <strong>{{ summary.tasksDueToday }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <span>Revenue Generated</span>
+      <strong>{{ formatCurrency(summary.revenueGenerated) }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <span>Pipeline Value</span>
+      <strong>{{ formatCurrency(summary.pipelineValue) }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <span>Total Campaigns</span>
+      <strong>{{ summary.totalCampaigns }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <span>Emails Sent</span>
+      <strong>{{ summary.emailsSent }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <span>Emails Opened</span>
+      <strong>{{ summary.emailsOpened }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <span>Emails Replied</span>
+      <strong>{{ summary.emailsReplied }}</strong>
+    </div>
+  </section>
+}

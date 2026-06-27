@@ -1,0 +1,13 @@
+<div class="app-shell">
+  <o-side-nav
+    [navItems]="navItems"
+    [activeKey]="activeKey"
+    [showLogout]="true"
+    (navChange)="onNavChange($event)"
+    (logout)="logout()">
+  </o-side-nav>
+
+  <main class="app-content">
+    <router-outlet />
+  </main>
+</div>
