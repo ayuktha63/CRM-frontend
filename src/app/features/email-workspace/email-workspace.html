@@ -1,0 +1,172 @@
+<div class="ew-container">
+
+  @if (toast()) {
+  <div class="ew-toast" [class.toast-error]="toast()!.type === 'error'">{{ toast()!.msg }}</div>
+  }
+
+  <div class="ew-layout">
+
+    <!-- Folder Sidebar -->
+    <aside class="ew-sidebar">
+      <button class="compose-btn" (click)="showCompose.set(true)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Compose
+      </button>
+
+      <nav class="ew-folders">
+        @for (folder of folders; track folder) {
+        <button class="folder-item" [class.active]="activeFolder() === folder" (click)="loadFolder(folder)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path [attr.d]="folderIcons[folder]" />
+          </svg>
+          <span class="folder-label">{{ getFolderLabel(folder) }}</span>
+          @if (folderCounts[folder]) {
+          <span class="folder-count">{{ folderCounts[folder] }}</span>
+          }
+        </button>
+        }
+      </nav>
+
+      <!-- Quick Stats -->
+      <div class="ew-stats">
+        <div class="ew-stat">
+          <span class="ew-stat-label">Total Emails</span>
+          <span class="ew-stat-value">{{ emails().length }}</span>
+        </div>
+        <div class="ew-stat">
+          <span class="ew-stat-label">Unread</span>
+          <span class="ew-stat-value unread">{{ emails().filter(e => !e.isRead).length }}</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Email List -->
+    <div class="ew-list">
+      <!-- List Header -->
+      <div class="ew-list-header">
+        <h2 class="ew-folder-title">{{ getFolderLabel(activeFolder()) }}</h2>
+        <div class="ew-search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="ew-search" placeholder="Search emails..." [value]="search()" (input)="search.set($any($event.target).value)" />
+        </div>
+      </div>
+
+      @if (loading()) {
+      <div class="ew-loading">
+        <div class="ew-spinner"></div>
+        <span>Loading emails...</span>
+      </div>
+      } @else if (getFilteredEmails().length === 0) {
+      <div class="ew-empty">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <p>No emails in {{ getFolderLabel(activeFolder()) }}</p>
+      </div>
+      } @else {
+      @for (email of getFilteredEmails(); track email.id) {
+      <div class="ew-email-row" [class.unread]="!email.isRead" [class.selected]="selectedEmail()?.id === email.id"
+        (click)="selectEmail(email)">
+        <button class="star-btn" [class.starred]="email.isStarred" (click)="toggleStar(email, $event)" title="Star">
+          ★
+        </button>
+        <div class="email-info">
+          <div class="email-from">{{ email.sender || email.recipient || 'Unknown' }}</div>
+          <div class="email-subject">{{ email.subject || '(no subject)' }}</div>
+          <div class="email-preview">{{ email.body | slice:0:80 }}...</div>
+        </div>
+        <div class="email-meta">
+          <span class="email-date">{{ email.createdAt | date:'MMM d' }}</span>
+          @if (!email.isRead) { <span class="unread-dot"></span> }
+        </div>
+      </div>
+      }
+      }
+    </div>
+
+    <!-- Email Detail Panel -->
+    <div class="ew-detail">
+      @if (!selectedEmail()) {
+      <div class="ew-detail-empty">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#C7D2FE" stroke-width="1"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <h3>Select an email to read</h3>
+        <p>Click any email from the list to view its content</p>
+      </div>
+      } @else {
+      <div class="ew-email-content">
+        <div class="email-content-header">
+          <h2 class="email-content-subject">{{ selectedEmail()!.subject }}</h2>
+          <div class="email-content-actions">
+            <button class="action-btn" title="Delete" (click)="deleteEmail(selectedEmail()!)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="email-from-row">
+          <div class="email-avatar">{{ (selectedEmail()!.sender || 'U').charAt(0).toUpperCase() }}</div>
+          <div class="email-from-info">
+            <span class="email-from-name">{{ selectedEmail()!.sender || 'Unknown Sender' }}</span>
+            <span class="email-from-to">To: {{ selectedEmail()!.recipient }}</span>
+          </div>
+          <span class="email-content-date">{{ selectedEmail()!.createdAt | date:'medium' }}</span>
+        </div>
+
+        <!-- Analytics Panel -->
+        @if (selectedEmail()!.openCount !== undefined || selectedEmail()!.clickCount !== undefined) {
+        <div class="email-analytics">
+          <div class="analytics-metric">
+            <span class="analytics-icon">👁</span>
+            <span>{{ selectedEmail()!.openCount ?? 0 }} opens</span>
+          </div>
+          <div class="analytics-metric">
+            <span class="analytics-icon">🖱</span>
+            <span>{{ selectedEmail()!.clickCount ?? 0 }} clicks</span>
+          </div>
+        </div>
+        }
+
+        <div class="email-body">{{ selectedEmail()!.body }}</div>
+
+        <!-- Reply Box -->
+        <div class="reply-box">
+          <textarea class="reply-input" placeholder="Write a reply..." rows="3"></textarea>
+          <div class="reply-actions">
+            <button class="btn-ghost-sm">Attach</button>
+            <button class="reply-send-btn">Send Reply</button>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+  </div>
+
+  <!-- Compose Modal -->
+  @if (showCompose()) {
+  <div class="compose-overlay" (click)="showCompose.set(false)">
+    <div class="compose-card" (click)="$event.stopPropagation()">
+      <div class="compose-header">
+        <h3>New Email</h3>
+        <button class="modal-close" (click)="showCompose.set(false)">✕</button>
+      </div>
+      <div class="compose-body">
+        <div class="compose-field">
+          <label>To</label>
+          <input type="email" [(ngModel)]="compose.recipient" placeholder="recipient@example.com" class="compose-input" />
+        </div>
+        <div class="compose-field">
+          <label>Subject</label>
+          <input type="text" [(ngModel)]="compose.subject" placeholder="Email subject" class="compose-input" />
+        </div>
+        <textarea [(ngModel)]="compose.body" placeholder="Write your email..." class="compose-textarea"></textarea>
+      </div>
+      <div class="compose-footer">
+        <button class="btn-ghost-sm" (click)="showCompose.set(false)">Cancel</button>
+        <button class="compose-send-btn" (click)="sendEmail()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+</div>

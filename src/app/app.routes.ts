@@ -42,6 +42,12 @@ export const routes: Routes = [
         data: { resource: 'deals' }
       },
       {
+        path: 'leads/:id',
+        loadComponent: () =>
+          import('./features/record-detail/record-detail').then(m => m.RecordDetailComponent),
+        data: { resource: 'leads' }
+      },
+      {
         path: 'deals/:id',
         loadComponent: () =>
           import('./features/record-detail/record-detail').then(m => m.RecordDetailComponent),
@@ -86,8 +92,7 @@ export const routes: Routes = [
       {
         path: 'emails',
         loadComponent: () =>
-          import('./features/list-page/list-page').then(m => m.ListPageComponent),
-        data: { resource: 'emails' }
+          import('./features/email-workspace/email-workspace').then(m => m.EmailWorkspaceComponent)
       },
       {
         path: 'products',
@@ -116,6 +121,31 @@ export const routes: Routes = [
         path: 'analytics',
         loadComponent: () =>
           import('./features/reports/reports').then(m => m.ReportsComponent)
+      },
+      {
+        path: 'report-builder',
+        loadComponent: () =>
+          import('./features/report-builder/report-builder').then(m => m.ReportBuilderComponent)
+      },
+      {
+        path: 'customization',
+        loadComponent: () =>
+          import('./features/customization/customization').then(m => m.CustomizationComponent)
+      },
+      {
+        path: 'inventory',
+        loadComponent: () =>
+          import('./features/inventory/inventory').then(m => m.InventoryComponent)
+      },
+      {
+        path: 'dashboard-builder',
+        loadComponent: () =>
+          import('./features/dashboard-builder/dashboard-builder').then(m => m.DashboardBuilderComponent)
+      },
+      {
+        path: 'calendar',
+        loadComponent: () =>
+          import('./features/calendar-workspace/calendar-workspace').then(m => m.CalendarWorkspaceComponent)
       },
       {
         path: 'users',

@@ -71,7 +71,7 @@
           <line x1="8" y1="2" x2="8" y2="6"/>
           <line x1="3" y1="10" x2="21" y2="10"/>
         </svg>
-        Document Series
+        Documents & Printing
       </button>
 
       <button 
@@ -248,7 +248,7 @@
           </div>
         </div>
 
-        <!-- ── DOCUMENT SERIES ─────────────────────────────────────────────── -->
+        <!-- ── DOCUMENT & PRINTER SERIES ─────────────────────────────────── -->
         <div *ngIf="activeSection() === 'series'">
           <h2 class="settings-section-title">Document Numbering Series</h2>
           <p class="settings-section-desc">Configure the naming prefixes and next sequential numbers for quotes and invoices.</p>
@@ -272,6 +272,47 @@
             <div class="settings-form-group">
               <label>Next Invoice Number</label>
               <input type="number" [(ngModel)]="settings().invoiceNextNumber" />
+            </div>
+          </div>
+
+          <h2 class="settings-section-title" style="margin-top: 32px; border-top: 1px dashed var(--crm-border); padding-top: 24px;">Printer Setup</h2>
+          <p class="settings-section-desc">Detect and configure physical or virtual printer connections for direct record printing.</p>
+
+          <div class="settings-form-grid">
+            <div class="settings-form-group">
+              <label>Default Print Device</label>
+              <div style="display: flex; gap: 8px;">
+                <select [(ngModel)]="settings().defaultPrinter" style="flex: 1; border: 1px solid var(--crm-border); border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; color: var(--crm-text-1); background: var(--crm-bg); outline: none;" [disabled]="scanningPrinters()">
+                  <option value="">-- No Default Printer --</option>
+                  <option *ngFor="let pr of detectedPrinters()" [value]="pr">{{ pr }}</option>
+                </select>
+                <button type="button" class="settings-refresh-btn" style="margin: 0; padding: 0 16px; min-width: 80px;" (click)="startPrinterScan()" [disabled]="scanningPrinters()">
+                  {{ scanningPrinters() ? 'Scanning...' : 'Scan' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="settings-form-group" style="display: flex; align-items: flex-end;">
+              <span *ngIf="detectedPrinters().length > 0 && !scanningPrinters()" style="font-size: 0.78rem; color: var(--crm-success); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; padding-bottom: 12px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                {{ detectedPrinters().length }} printer(s) detected online
+              </span>
+              <span *ngIf="detectedPrinters().length === 0 && !scanningPrinters()" style="font-size: 0.78rem; color: var(--crm-text-4); font-weight: 500; display: inline-flex; align-items: center; gap: 4px; padding-bottom: 12px;">
+                No active print devices found
+              </span>
+              
+              <!-- Scanning Bar Loader -->
+              <div *ngIf="scanningPrinters()" style="width: 100%; display: flex; flex-direction: column; gap: 4px; padding-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 600; color: var(--crm-primary);">
+                  <span>Searching local print services...</span>
+                  <span>{{ scanProgress() }}%</span>
+                </div>
+                <div style="width: 100%; height: 6px; background: var(--crm-border); border-radius: 99px; overflow: hidden;">
+                  <div [style.width.%]="scanProgress()" style="height: 100%; background: var(--crm-primary); border-radius: 99px; transition: width 0.05s ease-out;"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

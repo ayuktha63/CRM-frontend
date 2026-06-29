@@ -314,12 +314,44 @@ import { catchError } from 'rxjs/operators';
                   <thead>
                     <tr>
                       <th class="chk-col"></th>
-                      <th *ngFor="let col of page?.tableList || []">{{ col.label }}</th>
+                      <th *ngFor="let col of page?.tableList || []" style="position: relative;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                          <span>{{ col.label }}</span>
+                          <div style="position: relative; display: inline-flex; align-items: center;" (click)="$event.stopPropagation()">
+                            <button class="th-filter-btn" [class.active]="hasFilter(col.name)" (click)="toggleFilterPopup(col.name)" style="background: none; border: none; padding: 4px; color: var(--crm-text-3); cursor: pointer; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.12s;" type="button">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                              </svg>
+                            </button>
+                            
+                            @if (activeFilterField === col.name) {
+                              <div class="th-filter-popup" style="position: absolute; top: 100%; right: 0; margin-top: 8px; width: 220px; background: var(--crm-card); border: 1px solid var(--crm-border); border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); padding: 12px; z-index: 50; text-align: left; white-space: normal; display: flex; flex-direction: column; gap: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                  <span style="font-size: 0.78rem; font-weight: 600; color: var(--crm-text-1);">Filter {{ col.label }}</span>
+                                  <button (click)="closeFilterPopup()" style="background: none; border: none; font-size: 1.1rem; color: var(--crm-text-3); cursor: pointer; line-height: 1; padding: 0 4px;" type="button">×</button>
+                                </div>
+                                <div>
+                                  <input type="text" 
+                                         [value]="tempFilters[col.name] || ''"
+                                         (input)="onFilterInput($event, col.name)"
+                                         (keydown.enter)="applyFilter(col.name)"
+                                         placeholder="Search value..." 
+                                         style="width: 100%; border: 1px solid var(--crm-border); border-radius: 6px; padding: 6px 10px; font-size: 0.8rem; outline: none; background: var(--crm-bg); color: var(--crm-text-1);" />
+                                </div>
+                                <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px;">
+                                  <button (click)="clearFilter(col.name)" style="padding: 4px 10px; font-size: 0.72rem; font-weight: 600; border-radius: 4px; cursor: pointer; border: 1px solid var(--crm-border); background: none; color: var(--crm-text-2);" type="button">Clear</button>
+                                  <button (click)="applyFilter(col.name)" style="padding: 4px 10px; font-size: 0.72rem; font-weight: 600; border-radius: 4px; cursor: pointer; border: none; background: var(--crm-primary); color: #fff;" type="button">Apply</button>
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </th>
                       <th class="actions-col">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let row of data" [class.selected]="selectedRow?.id === row.id">
+                    <tr *ngFor="let row of filteredTableData" [class.selected]="selectedRow?.id === row.id">
                       <td class="chk-col">
                         <input type="checkbox" [checked]="selectedRow?.id === row.id" (change)="toggleSelectRow(row)" class="row-chk" />
                       </td>
@@ -336,7 +368,7 @@ import { catchError } from 'rxjs/operators';
                         <button class="row-action-btn" (click)="handleAction({ action: 'view', row: row })">View</button>
                       </td>
                     </tr>
-                    <tr *ngIf="data.length === 0">
+                    <tr *ngIf="filteredTableData.length === 0">
                       <td [attr.colspan]="(page?.tableList?.length ?? 0) + 2" class="empty-row">No records found</td>
                     </tr>
                   </tbody>
@@ -520,6 +552,10 @@ import { catchError } from 'rxjs/operators';
     .row-action-btn { padding: 4px 10px; font-size: 0.75rem; font-weight: 600; border-radius: 6px; border: 1px solid var(--crm-border); background: var(--crm-card); color: var(--crm-primary); cursor: pointer; transition: all 0.15s; }
     .row-action-btn:hover { background: var(--crm-primary); color: #fff; border-color: var(--crm-primary); }
     .empty-row { text-align: center; color: var(--crm-text-4); padding: 32px 0; }
+    .th-filter-btn { background: none; border: none; padding: 4px; color: var(--crm-text-3); cursor: pointer; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.12s; }
+    .th-filter-btn:hover { background: rgba(0,0,0,0.06); color: var(--crm-text-1); }
+    .th-filter-btn.active { color: var(--crm-primary) !important; background: var(--crm-primary-soft) !important; }
+    .th-filter-popup { position: absolute; top: 100%; right: 0; margin-top: 8px; width: 220px; background: var(--crm-card); border: 1px solid var(--crm-border); border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); padding: 12px; z-index: 50; text-align: left; white-space: normal; display: flex; flex-direction: column; gap: 8px; }
     
     .status-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; }
     .status-badge[data-status="Draft"] { background: var(--crm-hover); color: var(--crm-text-3); }
@@ -553,6 +589,10 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
   selectedRow: any = null;
   pdfDownloading = false;
   private readonly http = inject(HttpClient);
+
+  columnFilters: Record<string, string> = {};
+  tempFilters: Record<string, string> = {};
+  activeFilterField: string | null = null;
 
   page: PageConfig | null = null;
   data: any[] = [];
@@ -1226,5 +1266,58 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
 
   private showError(msg: string): void {
     this.toast.addError('Error', msg);
+  }
+
+  toggleFilterPopup(field: string): void {
+    if (this.activeFilterField === field) {
+      this.activeFilterField = null;
+    } else {
+      this.activeFilterField = field;
+      this.tempFilters[field] = this.columnFilters[field] || '';
+    }
+  }
+
+  closeFilterPopup(): void {
+    this.activeFilterField = null;
+  }
+
+  onFilterInput(event: Event, field: string): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.tempFilters[field] = val;
+  }
+
+  hasFilter(field: string): boolean {
+    return !!this.columnFilters[field];
+  }
+
+  applyFilter(field: string): void {
+    this.columnFilters[field] = this.tempFilters[field] || '';
+    this.selectedRow = null;
+    this.activeFilterField = null;
+    this.cdr.markForCheck();
+  }
+
+  clearFilter(field: string): void {
+    this.tempFilters[field] = '';
+    this.columnFilters[field] = '';
+    this.selectedRow = null;
+    this.activeFilterField = null;
+    this.cdr.markForCheck();
+  }
+
+  get filteredTableData(): any[] {
+    let rows = [...(this.data || [])];
+    
+    for (const field of Object.keys(this.columnFilters)) {
+      const query = this.columnFilters[field]?.trim().toLowerCase();
+      if (query) {
+        rows = rows.filter(r => {
+          const val = String(r[field] ?? '').toLowerCase();
+          return val.includes(query);
+        });
+      }
+    }
+    
+    return rows;
   }
 }

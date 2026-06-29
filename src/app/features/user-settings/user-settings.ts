@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { OToastService } from 'orque-ui';
 
 export interface UserSettings {
   id?: number;
@@ -34,6 +35,7 @@ export interface UserSettings {
   quoteNextNumber?: number;
   invoiceSeriesPrefix?: string;
   invoiceNextNumber?: number;
+  defaultPrinter?: string;
 }
 
 export interface EmailLog {
@@ -60,6 +62,10 @@ export interface EmailLog {
 export class UserSettingsComponent implements OnInit {
   settings = signal<UserSettings>({});
   emailLogs = signal<EmailLog[]>([]);
+  detectedPrinters = signal<string[]>([]);
+  
+  scanningPrinters = signal<boolean>(false);
+  scanProgress = signal<number>(0);
   
   loadingSettings = true;
   loadingLogs = true;
@@ -73,17 +79,79 @@ export class UserSettingsComponent implements OnInit {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly cdr: ChangeDetectorRef
+    private readonly cdr: ChangeDetectorRef,
+    private readonly toast: OToastService
   ) {}
 
   ngOnInit() {
     this.loadSettings();
     this.loadLogs();
+    this.loadPrinters();
   }
 
   private hdrs(): HttpHeaders {
     const token = localStorage.getItem('accessToken') ?? '';
     return new HttpHeaders({ Authorization: `Bearer ${token}` });
+  }
+
+  loadPrinters() {
+    this.http.get<string[]>(`${this.base}/api/v1/user-settings/detected-printers`, { headers: this.hdrs() })
+      .pipe(catchError(() => of([])))
+      .subscribe(printers => {
+        this.detectedPrinters.set(printers);
+        this.cdr.markForCheck();
+      });
+  }
+
+  startPrinterScan() {
+    if (this.scanningPrinters()) return;
+
+    this.scanningPrinters.set(true);
+    this.scanProgress.set(0);
+    this.cdr.markForCheck();
+
+    const duration = 1500;
+    const intervalTime = 30;
+    const steps = duration / intervalTime;
+    const increment = 100 / steps;
+    
+    let currentProgress = 0;
+    const timer = setInterval(() => {
+      currentProgress += increment;
+      if (currentProgress >= 100) {
+        currentProgress = 100;
+        clearInterval(timer);
+        
+        this.http.get<string[]>(`${this.base}/api/v1/user-settings/detected-printers`, { headers: this.hdrs() })
+          .pipe(catchError(() => of([])))
+          .subscribe({
+            next: printers => {
+              const previousCount = this.detectedPrinters().length;
+              this.detectedPrinters.set(printers);
+              this.scanningPrinters.set(false);
+              this.scanProgress.set(0);
+              
+              if (printers.length > previousCount) {
+                const diff = printers.length - previousCount;
+                this.toast.addSuccess('Scan Complete', `Found ${diff} new print device(s).`);
+              } else {
+                this.toast.addInfo('Scan Complete', 'No new printer devices found.');
+              }
+              
+              this.cdr.markForCheck();
+            },
+            error: () => {
+              this.scanningPrinters.set(false);
+              this.scanProgress.set(0);
+              this.toast.addInfo('Scan Complete', 'No new printer devices found.');
+              this.cdr.markForCheck();
+            }
+          });
+      } else {
+        this.scanProgress.set(Math.round(currentProgress));
+        this.cdr.markForCheck();
+      }
+    }, intervalTime);
   }
 
   loadSettings() {

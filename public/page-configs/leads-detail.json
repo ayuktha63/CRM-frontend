@@ -1,0 +1,31 @@
+{
+  "resource": "leads",
+  "api": "/api/v1/leads",
+  "titleField": "fullName",
+  "subtitleField": "company",
+  "statusField": "status",
+  "headerActions": [
+    { "label": "Edit", "action": "edit", "style": "secondary" }
+  ],
+  "tabs": [
+    {
+      "key": "overview",
+      "label": "Overview",
+      "type": "overview",
+      "fieldGroups": [
+        {
+          "label": "Lead Information",
+          "fields": [
+            { "name": "fullName",  "label": "Full Name" },
+            { "name": "company",   "label": "Company" },
+            { "name": "email",     "label": "Email" },
+            { "name": "phone",     "label": "Phone" },
+            { "name": "industry",  "label": "Industry" },
+            { "name": "leadSource","label": "Lead Source" },
+            { "name": "status",    "label": "Status" }
+          ]
+        }
+      ]
+    }
+  ]
+}

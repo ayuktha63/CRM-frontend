@@ -61,6 +61,20 @@ export class RecordDetailComponent implements OnInit, OnDestroy {
   addSubmitting = false;
   addError: string | null = null;
 
+  // Notes, Attachments, Timeline
+  notes = signal<any[]>([]);
+  newNoteContent = '';
+  editingNoteId: number | null = null;
+  editingNoteContent = '';
+  notesLoading = false;
+
+  attachments = signal<any[]>([]);
+  selectedUploadFile: File | null = null;
+  attachmentsLoading = false;
+
+  timeline = signal<any[]>([]);
+  timelineLoading = false;
+
 
 
   private readonly _subs = new Subscription();
@@ -98,15 +112,33 @@ export class RecordDetailComponent implements OnInit, OnDestroy {
     this._subs.add(forkJoin({
       cfg: this.http.get<DetailConfig>(`/page-configs/${resource}-detail.json`),
       rec: this.http.get<Record<string, unknown>>(
-        `${this.base}/api/v1/${resource}/${id}`, { headers: this.hdrs() })
+        `${this.base}/api/v1/${resource}/${id}`,
+        { headers: this.hdrs() }
+      )
     }).subscribe({
       next: ({ cfg, rec }) => {
+        if (cfg && cfg.tabs) {
+          const hasNotes = cfg.tabs.some(t => t.key === 'notes');
+          if (!hasNotes) {
+            cfg.tabs.push({ key: 'notes', label: 'Notes', type: 'related-list' });
+          }
+          const hasAttachments = cfg.tabs.some(t => t.key === 'attachments');
+          if (!hasAttachments) {
+            cfg.tabs.push({ key: 'attachments', label: 'Attachments', type: 'related-list' });
+          }
+          const hasTimeline = cfg.tabs.some(t => t.key === 'timeline');
+          if (!hasTimeline) {
+            cfg.tabs.push({ key: 'timeline', label: 'Timeline', type: 'related-list' });
+          }
+        }
         this.config = cfg;
         this.record = rec;
         this.loading = false;
-        const first = cfg.tabs[0];
-        this.activeTab.set(first?.key ?? '');
-        if (first?.type === 'related-list') this.fetchTab(first, id);
+        
+        // Auto-select first tab
+        if (cfg?.tabs?.length) {
+          this.selectTab(cfg.tabs[0]);
+        }
         this.cdr.markForCheck();
       },
       error: err => {
@@ -121,7 +153,13 @@ export class RecordDetailComponent implements OnInit, OnDestroy {
     const id = this.route.snapshot.params['id'] as string;
     this.activeTab.set(tab.key);
     this.closeAddPanel();
-    if (tab.type === 'related-list' && !this.tabData()[tab.key]) {
+    if (tab.key === 'notes') {
+      this.loadNotes();
+    } else if (tab.key === 'attachments') {
+      this.loadAttachments();
+    } else if (tab.key === 'timeline') {
+      this.loadTimeline();
+    } else if (tab.type === 'related-list' && !this.tabData()[tab.key]) {
       this.fetchTab(tab, id);
     }
     this.cdr.markForCheck();
@@ -281,11 +319,173 @@ export class RecordDetailComponent implements OnInit, OnDestroy {
     return this.primitiveStr(row?.[col.name]) || '—';
   }
 
-  isTabLoading(key: string)  { return !!this.tabLoading()[key]; }
-  tabRows(key: string)        { return (this.tabData()[key] ?? []) as Record<string, unknown>[]; }
-  tabCount(key: string)       { return this.tabData()[key]?.length ?? 0; }
+  isTabLoading(key: string) {
+    if (key === 'notes') return this.notesLoading;
+    if (key === 'attachments') return this.attachmentsLoading;
+    if (key === 'timeline') return this.timelineLoading;
+    return !!this.tabLoading()[key];
+  }
 
+  tabRows(key: string) {
+    return (this.tabData()[key] ?? []) as Record<string, unknown>[];
+  }
 
+  tabCount(key: string) {
+    if (key === 'notes') return this.notes().length;
+    if (key === 'attachments') return this.attachments().length;
+    if (key === 'timeline') return this.timeline().length;
+    return this.tabData()[key]?.length ?? 0;
+  }
+
+  // ── Notes Operations ──
+  loadNotes() {
+    const id = this.route.snapshot.params['id'] as string;
+    const resource = this.route.snapshot.data['resource'] as string;
+    this.notesLoading = true;
+    this.cdr.markForCheck();
+    this.http.get<any[]>(`${this.base}/api/v1/notes/${resource}/${id}`, { headers: this.hdrs() })
+      .pipe(catchError(() => of([])))
+      .subscribe(data => {
+        this.notes.set(data);
+        this.notesLoading = false;
+        this.cdr.markForCheck();
+      });
+  }
+
+  saveNote() {
+    if (!this.newNoteContent.trim()) return;
+    const id = this.route.snapshot.params['id'] as string;
+    const resource = this.route.snapshot.data['resource'] as string;
+    this.http.post<any>(`${this.base}/api/v1/notes/${resource}/${id}`, this.newNoteContent, { headers: this.hdrs() })
+      .subscribe({
+        next: () => {
+          this.newNoteContent = '';
+          this.loadNotes();
+          this.loadTimeline();
+        },
+        error: () => this.showErr('Failed to save note')
+      });
+  }
+
+  startEditNote(note: any) {
+    this.editingNoteId = note.id;
+    this.editingNoteContent = note.content;
+  }
+
+  cancelEditNote() {
+    this.editingNoteId = null;
+    this.editingNoteContent = '';
+  }
+
+  updateNote(id: number) {
+    this.http.put<any>(`${this.base}/api/v1/notes/${id}`, this.editingNoteContent, { headers: this.hdrs() })
+      .subscribe({
+        next: () => {
+          this.cancelEditNote();
+          this.loadNotes();
+          this.loadTimeline();
+        },
+        error: () => this.showErr('Failed to update note')
+      });
+  }
+
+  deleteNote(id: number) {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+    this.http.delete(`${this.base}/api/v1/notes/${id}`, { headers: this.hdrs() })
+      .subscribe({
+        next: () => {
+          this.loadNotes();
+          this.loadTimeline();
+        },
+        error: () => this.showErr('Failed to delete note')
+      });
+  }
+
+  // ── Attachments Operations ──
+  loadAttachments() {
+    const id = this.route.snapshot.params['id'] as string;
+    const resource = this.route.snapshot.data['resource'] as string;
+    this.attachmentsLoading = true;
+    this.cdr.markForCheck();
+    this.http.get<any[]>(`${this.base}/api/v1/attachments/${resource}/${id}`, { headers: this.hdrs() })
+      .pipe(catchError(() => of([])))
+      .subscribe(data => {
+        this.attachments.set(data);
+        this.attachmentsLoading = false;
+        this.cdr.markForCheck();
+      });
+  }
+
+  triggerFileInput() {
+    const el = document.getElementById('fileUploadInput') as HTMLInputElement | null;
+    if (el) el.click();
+  }
+
+  onFileSelected(event: any) {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      this.selectedUploadFile = files[0];
+      this.cdr.markForCheck();
+    }
+  }
+
+  uploadAttachment() {
+    if (!this.selectedUploadFile) return;
+    const id = this.route.snapshot.params['id'] as string;
+    const resource = this.route.snapshot.data['resource'] as string;
+    const formData = new FormData();
+    formData.append('file', this.selectedUploadFile);
+
+    this.http.post<any>(`${this.base}/api/v1/attachments/${resource}/${id}`, formData, { headers: this.hdrs() })
+      .subscribe({
+        next: () => {
+          this.selectedUploadFile = null;
+          this.loadAttachments();
+          this.loadTimeline();
+        },
+        error: () => this.showErr('Failed to upload file')
+      });
+  }
+
+  deleteAttachment(id: number) {
+    if (!confirm('Are you sure you want to delete this attachment?')) return;
+    this.http.delete(`${this.base}/api/v1/attachments/${id}`, { headers: this.hdrs() })
+      .subscribe({
+        next: () => {
+          this.loadAttachments();
+          this.loadTimeline();
+        },
+        error: () => this.showErr('Failed to delete attachment')
+      });
+  }
+
+  getDownloadUrl(att: any): string {
+    return `${this.base}${att.fileUrl}`;
+  }
+
+  formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = 2;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  }
+
+  // ── Timeline Operations ──
+  loadTimeline() {
+    const id = this.route.snapshot.params['id'] as string;
+    const resource = this.route.snapshot.data['resource'] as string;
+    this.timelineLoading = true;
+    this.cdr.markForCheck();
+    this.http.get<any[]>(`${this.base}/api/v1/timeline/${resource}/${id}`, { headers: this.hdrs() })
+      .pipe(catchError(() => of([])))
+      .subscribe(data => {
+        this.timeline.set(data);
+        this.timelineLoading = false;
+        this.cdr.markForCheck();
+      });
+  }
 
   /** Safe primitive → string. Objects are skipped (returns ''). */
   private primitiveStr(v: unknown): string {
