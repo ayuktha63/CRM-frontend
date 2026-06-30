@@ -1,12 +1,40 @@
 <div class="dash-wrap">
 
   <!-- Header -->
-  <div class="dash-header">
+  <div class="dash-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
     <div>
       <h1 class="dash-title">{{ greeting() }}, {{ currentUser().name }} 👋</h1>
       <p class="dash-subtitle">Here's what's happening with your CRM today.</p>
+      
+      <!-- Sharing Indicator -->
+      <div style="margin-top: 6px; font-size: 0.76rem; color: var(--crm-text-3); font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm11 10v-2a4 4 0 0 0-3-3.87m-4-12a4 4 0 0 1 0 7.75"/></svg>
+        {{ sharedWithLabel() }}
+      </div>
     </div>
-    <div class="dash-header-actions">
+    
+    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+      <!-- Global Date Filter -->
+      <select [value]="dateFilter()" (change)="onFilterChange($any($event.target).value)" style="border: 1px solid var(--crm-border); border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; background: var(--crm-card); color: var(--crm-text-1); outline: none; cursor: pointer;">
+        <option value="all">All Time</option>
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+      </select>
+
+      <!-- Auto Refresh Rate -->
+      <select [value]="refreshIntervalRate()" (change)="onRefreshRateChange(+$any($event.target).value)" style="border: 1px solid var(--crm-border); border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; background: var(--crm-card); color: var(--crm-text-1); outline: none; cursor: pointer;">
+        <option [value]="0">Auto Refresh: Off</option>
+        <option [value]="30">Every 30s</option>
+        <option [value]="60">Every 1m</option>
+        <option [value]="300">Every 5m</option>
+      </select>
+
+      <!-- Customize Layout Toggle -->
+      <button (click)="isCustomizing.set(!isCustomizing())" style="padding: 6px 14px; font-size: 0.8rem; font-weight: 600; border-radius: 8px; border: 1px solid var(--crm-border); background: var(--crm-card); color: var(--crm-text-2); cursor: pointer; transition: all 0.15s;" [style.border-color]="isCustomizing() ? 'var(--crm-primary)' : ''" [style.color]="isCustomizing() ? 'var(--crm-primary)' : ''">
+        {{ isCustomizing() ? 'Finish Customizing' : 'Customize Layout' }}
+      </button>
+
       <a [routerLink]="['/leads']" class="dash-btn dash-btn--outline">View All Leads</a>
       <a [routerLink]="['/deals']" class="dash-btn dash-btn--primary">+ New Deal</a>
     </div>
@@ -15,7 +43,7 @@
   @if (!loading()) {
 
   <!-- KPI Metrics Grid -->
-  <div class="metrics-grid">
+  <div class="metrics-grid" style="margin-bottom: 24px;">
     @for (m of kpis(); track m.label) {
     <o-stat-card
       [label]="m.label"
@@ -32,7 +60,7 @@
 
   <!-- Session Stats Strip -->
   @if (!isSalesUser()) {
-  <div class="session-stats-strip">
+  <div class="session-stats-strip" style="margin-bottom: 24px;">
     @for (s of sessionCards(); track s.label) {
     <o-stat-card
       [label]="s.label"
@@ -50,18 +78,25 @@
   }
 
   } @else {
-  <div class="metrics-grid">
+  <div class="metrics-grid" style="margin-bottom: 24px;">
     @for (i of [1,2,3,4,5,6]; track i) {
     <div class="metric-skeleton"></div>
     }
   </div>
   }
 
-  <!-- Row: Pipeline + Activities -->
-  <div class="dash-row">
+  <!-- Widgets Flex Layout Grid -->
+  <div style="display: flex; flex-wrap: wrap; gap: 24px; width: 100%;">
 
-    <!-- Pipeline -->
-    <div class="dash-card pipeline-card">
+    <!-- Deal Pipeline -->
+    <div class="dash-card" [style.flex]="getWidgetFlex('pipeline')" style="min-width: 300px; margin: 0; display: flex; flex-direction: column;">
+      <div *ngIf="isCustomizing()" style="display: flex; gap: 6px; padding: 8px 16px; background: var(--crm-hover); border-bottom: 1px solid var(--crm-border); align-items: center; justify-content: flex-end;">
+        <span style="font-size: 0.72rem; font-weight: 600; color: var(--crm-text-3);">Resize:</span>
+        <button (click)="setWidgetSize('pipeline', 'narrow')" style="font-size: 0.7rem; border-radius: 4px; padding: 2px 6px; border: 1px solid var(--crm-border); background: var(--crm-card); cursor: pointer;" [style.border-color]="widgetSizes()['pipeline'] === 'narrow' ? 'var(--crm-primary)' : ''">1/3</button>
+        <button (click)="setWidgetSize('pipeline', 'medium')" style="font-size: 0.7rem; border-radius: 4px; padding: 2px 6px; border: 1px solid var(--crm-border); background: var(--crm-card); cursor: pointer;" [style.border-color]="widgetSizes()['pipeline'] === 'medium' ? 'var(--crm-primary)' : ''">1/2</button>
+        <button (click)="setWidgetSize('pipeline', 'wide')" style="font-size: 0.7rem; border-radius: 4px; padding: 2px 6px; border: 1px solid var(--crm-border); background: var(--crm-card); cursor: pointer;" [style.border-color]="widgetSizes()['pipeline'] === 'wide' ? 'var(--crm-primary)' : ''">Full</button>
+      </div>
+      
       <div class="card-header">
         <h3 class="card-title">Deal Pipeline</h3>
         <a [routerLink]="['/deals']" class="card-link">View all →</a>
@@ -81,7 +116,14 @@
     </div>
 
     <!-- Recent Activities -->
-    <div class="dash-card activity-card">
+    <div class="dash-card" [style.flex]="getWidgetFlex('activity')" style="min-width: 300px; margin: 0; display: flex; flex-direction: column;">
+      <div *ngIf="isCustomizing()" style="display: flex; gap: 6px; padding: 8px 16px; background: var(--crm-hover); border-bottom: 1px solid var(--crm-border); align-items: center; justify-content: flex-end;">
+        <span style="font-size: 0.72rem; font-weight: 600; color: var(--crm-text-3);">Resize:</span>
+        <button (click)="setWidgetSize('activity', 'narrow')" style="font-size: 0.7rem; border-radius: 4px; padding: 2px 6px; border: 1px solid var(--crm-border); background: var(--crm-card); cursor: pointer;" [style.border-color]="widgetSizes()['activity'] === 'narrow' ? 'var(--crm-primary)' : ''">1/3</button>
+        <button (click)="setWidgetSize('activity', 'medium')" style="font-size: 0.7rem; border-radius: 4px; padding: 2px 6px; border: 1px solid var(--crm-border); background: var(--crm-card); cursor: pointer;" [style.border-color]="widgetSizes()['activity'] === 'medium' ? 'var(--crm-primary)' : ''">1/2</button>
+        <button (click)="setWidgetSize('activity', 'wide')" style="font-size: 0.7rem; border-radius: 4px; padding: 2px 6px; border: 1px solid var(--crm-border); background: var(--crm-card); cursor: pointer;" [style.border-color]="widgetSizes()['activity'] === 'wide' ? 'var(--crm-primary)' : ''">Full</button>
+      </div>
+
       <div class="card-header">
         <h3 class="card-title">Recent Activities</h3>
         <a [routerLink]="['/activities']" class="card-link">View all →</a>
@@ -106,13 +148,16 @@
         }
       </div>
     </div>
-  </div>
-
-  <!-- Row: Quick Actions + Email Stats -->
-  <div class="dash-row dash-row--bottom">
 
     <!-- Quick Actions -->
-    <div class="dash-card quick-card">
+    <div class="dash-card" [style.flex]="getWidgetFlex('quick')" style="min-width: 300px; margin: 0; display: flex; flex-direction: column;">
+      <div *ngIf="isCustomizing()" style="display: flex; gap: 6px; padding: 8px 16px; background: var(--crm-hover); border-bottom: 1px solid var(--crm-border); align-items: center; justify-content: flex-end;">
+        <span style="font-size: 0.72rem; font-weight: 600; color: var(--crm-text-3);">Resize:</span>
+        <button (click)="setWidgetSize('quick', 'narrow')" style="font-size: 0.7rem; border-radius: 4px; padding: 2px 6px; border: 1px solid var(--crm-border); background: var(--crm-card); cursor: pointer;" [style.border-color]="widgetSizes()['quick'] === 'narrow' ? 'var(--crm-primary)' : ''">1/3</button>
+        <button (click)="setWidgetSize('quick', 'medium')" style="font-size: 0.7rem; border-radius: 4px; padding: 2px 6px; border: 1px solid var(--crm-border); background: var(--crm-card); cursor: pointer;" [style.border-color]="widgetSizes()['quick'] === 'medium' ? 'var(--crm-primary)' : ''">1/2</button>
+        <button (click)="setWidgetSize('quick', 'wide')" style="font-size: 0.7rem; border-radius: 4px; padding: 2px 6px; border: 1px solid var(--crm-border); background: var(--crm-card); cursor: pointer;" [style.border-color]="widgetSizes()['quick'] === 'wide' ? 'var(--crm-primary)' : ''">Full</button>
+      </div>
+
       <div class="card-header">
         <h3 class="card-title">Quick Actions</h3>
       </div>
@@ -132,7 +177,14 @@
     </div>
 
     <!-- Email Performance -->
-    <div class="dash-card email-card">
+    <div class="dash-card" [style.flex]="getWidgetFlex('email')" style="min-width: 300px; margin: 0; display: flex; flex-direction: column;">
+      <div *ngIf="isCustomizing()" style="display: flex; gap: 6px; padding: 8px 16px; background: var(--crm-hover); border-bottom: 1px solid var(--crm-border); align-items: center; justify-content: flex-end;">
+        <span style="font-size: 0.72rem; font-weight: 600; color: var(--crm-text-3);">Resize:</span>
+        <button (click)="setWidgetSize('email', 'narrow')" style="font-size: 0.7rem; border-radius: 4px; padding: 2px 6px; border: 1px solid var(--crm-border); background: var(--crm-card); cursor: pointer;" [style.border-color]="widgetSizes()['email'] === 'narrow' ? 'var(--crm-primary)' : ''">1/3</button>
+        <button (click)="setWidgetSize('email', 'medium')" style="font-size: 0.7rem; border-radius: 4px; padding: 2px 6px; border: 1px solid var(--crm-border); background: var(--crm-card); cursor: pointer;" [style.border-color]="widgetSizes()['email'] === 'medium' ? 'var(--crm-primary)' : ''">1/2</button>
+        <button (click)="setWidgetSize('email', 'wide')" style="font-size: 0.7rem; border-radius: 4px; padding: 2px 6px; border: 1px solid var(--crm-border); background: var(--crm-card); cursor: pointer;" [style.border-color]="widgetSizes()['email'] === 'wide' ? 'var(--crm-primary)' : ''">Full</button>
+      </div>
+
       <div class="card-header">
         <h3 class="card-title">Email Performance</h3>
         <a [routerLink]="['/campaigns']" class="card-link">View campaigns →</a>
@@ -149,6 +201,7 @@
         }
       </div>
     </div>
+
   </div>
 
 </div>

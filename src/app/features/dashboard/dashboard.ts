@@ -44,6 +44,22 @@ export class DashboardComponent implements OnInit {
 
   loading = signal(true);
 
+  // Dashboard Polish properties
+  refreshIntervalRate = signal<number>(0); // 0 means Off
+  dateFilter = signal<string>('all'); // all, today, week, month
+  isCustomizing = signal<boolean>(false);
+  sharedWithLabel = signal<string>('Shared with: All Sales & Admins');
+  
+  // Widget size settings
+  widgetSizes = signal<Record<string, 'wide' | 'medium' | 'narrow'>>({
+    pipeline: 'medium',
+    activity: 'medium',
+    quick: 'medium',
+    email: 'medium'
+  });
+
+  private refreshTimer: any = null;
+
   currentUser = computed(() => {
     try {
       const raw = localStorage.getItem('crmUser');
@@ -91,6 +107,16 @@ export class DashboardComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.loadDashboardData();
+    this.loadWidgetSizes();
+  }
+
+  ngOnDestroy(): void {
+    this.clearRefreshTimer();
+  }
+
+  loadDashboardData(): void {
+    this.loading.set(true);
     const fetchSessions = this.isSalesUser()
       ? of(null)
       : this.store.get('/api/v1/sessions/stats').pipe(catchError(() => of(null)));
@@ -103,6 +129,43 @@ export class DashboardComponent implements OnInit {
     }).subscribe(({ summary, deals, acts, sessions }) => {
       this.buildDashboard(summary, deals, acts, sessions);
     });
+  }
+
+  loadWidgetSizes() {
+    const saved = localStorage.getItem('crmDashboardWidgetSizes');
+    if (saved) {
+      try { this.widgetSizes.set(JSON.parse(saved)); } catch {}
+    }
+  }
+
+  setWidgetSize(widget: string, size: 'wide' | 'medium' | 'narrow') {
+    this.widgetSizes.update(sizes => {
+      const updated = { ...sizes, [widget]: size };
+      localStorage.setItem('crmDashboardWidgetSizes', JSON.stringify(updated));
+      return updated;
+    });
+  }
+
+  onRefreshRateChange(rate: number) {
+    this.refreshIntervalRate.set(rate);
+    this.clearRefreshTimer();
+    if (rate > 0) {
+      this.refreshTimer = setInterval(() => {
+        this.loadDashboardData();
+      }, rate * 1000);
+    }
+  }
+
+  clearRefreshTimer() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+  }
+
+  onFilterChange(filterVal: string) {
+    this.dateFilter.set(filterVal);
+    this.loadDashboardData();
   }
 
   private buildDashboard(d: any, deals: any[], acts: any[], sessions: any): void {
@@ -261,5 +324,12 @@ export class DashboardComponent implements OnInit {
 
   private pluralize(count: number, singular: string): string {
     return count === 1 ? singular : `${singular}s`;
+  }
+
+  getWidgetFlex(widget: string): string {
+    const size = this.widgetSizes()[widget] || 'medium';
+    if (size === 'wide') return '1 1 100%';
+    if (size === 'narrow') return '1 1 calc(33.3% - 16px)';
+    return '1 1 calc(50% - 12px)';
   }
 }

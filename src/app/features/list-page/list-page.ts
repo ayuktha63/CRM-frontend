@@ -51,63 +51,134 @@ import { catchError } from 'rxjs/operators';
       <!-- Dynamic Custom Modules -->
       @if (resource === 'calendar') {
         <div class="cal-container">
-          <div class="cal-header">
-            <h2 class="cal-title">Calendar Workspace</h2>
-            <p class="cal-subtitle">Track your client intro calls, meetings, follow-ups, and demo dates.</p>
+          <div class="cal-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; border-bottom: 1px solid var(--crm-border); padding-bottom: 20px;">
+            <div>
+              <h2 class="cal-title">Calendar Workspace</h2>
+              <p class="cal-subtitle">Track your client intro calls, meetings, follow-ups, and demo dates.</p>
+              <div style="font-size: 0.74rem; color: var(--crm-text-4); margin-top: 4px; font-weight: 500;">
+                Current Time Zone: <strong>Asia/Kolkata (IST)</strong> | Working Hours: <strong>09:00 AM - 05:00 PM</strong>
+              </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button [class.active]="calendarSubMode === 'calendar'" (click)="calendarSubMode = 'calendar'" style="padding: 6px 14px; font-size: 0.78rem; font-weight: 600; border-radius: 6px; border: 1px solid var(--crm-border); background: var(--crm-card); color: var(--crm-text-2); cursor: pointer;" [style.border-color]="calendarSubMode === 'calendar' ? 'var(--crm-primary)' : ''" [style.color]="calendarSubMode === 'calendar' ? 'var(--crm-primary)' : ''">Calendar</button>
+              <button [class.active]="calendarSubMode === 'scheduler'" (click)="calendarSubMode = 'scheduler'" style="padding: 6px 14px; font-size: 0.78rem; font-weight: 600; border-radius: 6px; border: 1px solid var(--crm-border); background: var(--crm-card); color: var(--crm-text-2); cursor: pointer;" [style.border-color]="calendarSubMode === 'scheduler' ? 'var(--crm-primary)' : ''" [style.color]="calendarSubMode === 'scheduler' ? 'var(--crm-primary)' : ''">Meeting Scheduler</button>
+              
+              <button (click)="syncCalendarProvider('google')" class="em-btn" style="background: rgba(219, 68, 85, 0.1); border-color: rgba(219, 68, 85, 0.3); color: #db4437; padding: 6px 12px; font-size: 0.76rem;">
+                Sync Google
+              </button>
+              <button (click)="syncCalendarProvider('outlook')" class="em-btn" style="background: rgba(0, 120, 215, 0.1); border-color: rgba(0, 120, 215, 0.3); color: #0078d7; padding: 6px 12px; font-size: 0.76rem;">
+                Sync Outlook
+              </button>
+            </div>
           </div>
-          <div class="cal-card">
-            @if (loadingCustom) {
-              <div class="cal-loading">Loading events...</div>
-            } @else {
-              <o-calendar 
-                [days]="calendarDays" 
-                [currentDate]="calendarCurrentDate"
-                (monthChange)="onCalendarMonthChange($event)"
-                (dayClick)="onCalendarDayClick($event)">
-              </o-calendar>
-            }
-          </div>
-          @if (selectedCalendarDay) {
-            <div class="cal-details">
-              <div class="cal-details-grid">
-                <div class="cal-details-left">
-                  <h3 class="details-title">Events for {{ selectedCalendarDay.date | date:'longDate' }}</h3>
-                  @if (selectedCalendarDay.events.length) {
-                    <div class="details-list">
-                      @for (ev of selectedCalendarDay.events; track ev.label) {
-                        <div class="details-item" [attr.data-status]="ev.status">
-                          <span class="details-badge">{{ ev.status }}</span>
-                          <span class="details-label">{{ ev.label }}</span>
-                        </div>
-                      }
+
+          <!-- Main Mode Selector -->
+          @if (calendarSubMode === 'calendar') {
+            <div class="cal-card">
+              @if (loadingCustom) {
+                <div class="cal-loading">Loading events...</div>
+              } @else {
+                <o-calendar 
+                  [days]="calendarDays" 
+                  [currentDate]="calendarCurrentDate"
+                  (monthChange)="onCalendarMonthChange($event)"
+                  (dayClick)="onCalendarDayClick($event)">
+                </o-calendar>
+              }
+            </div>
+            
+            @if (selectedCalendarDay) {
+              <div class="cal-details">
+                <div class="cal-details-grid">
+                  <div class="cal-details-left">
+                    <h3 class="details-title">Events for {{ selectedCalendarDay.date | date:'longDate' }}</h3>
+                    @if (selectedCalendarDay.events.length) {
+                      <div class="details-list">
+                        @for (ev of selectedCalendarDay.events; track ev.label) {
+                          <div class="details-item" [attr.data-status]="ev.status">
+                            <span class="details-badge">{{ ev.status }}</span>
+                            <span class="details-label">{{ ev.label }}</span>
+                          </div>
+                        }
+                      </div>
+                    } @else {
+                      <p class="details-empty">No events scheduled for this day.</p>
+                    }
+                  </div>
+                  
+                  <div class="cal-details-right">
+                    <h3 class="details-title">Create New Event</h3>
+                    <div class="cal-event-form">
+                      <div class="form-group" style="margin-bottom: 12px;">
+                        <label class="form-label" style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--crm-text-2); margin-bottom: 4px;">Event Title</label>
+                        <input type="text" [(ngModel)]="newEventTitle" placeholder="e.g. Onboarding Call" class="form-input" style="width: 100%; border: 1px solid var(--crm-border); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; background: var(--crm-bg); color: var(--crm-text-1); outline: none;">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 12px;">
+                        <label class="form-label" style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--crm-text-2); margin-bottom: 4px;">Description</label>
+                        <input type="text" [(ngModel)]="newEventDesc" placeholder="e.g. Kickoff project scope" class="form-input" style="width: 100%; border: 1px solid var(--crm-border); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; background: var(--crm-bg); color: var(--crm-text-1); outline: none;">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 16px;">
+                        <label class="form-label" style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--crm-text-2); margin-bottom: 4px;">Assign To</label>
+                        <select [(ngModel)]="newEventAssign" class="form-input" style="width: 100%; border: 1px solid var(--crm-border); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; background: var(--crm-bg); color: var(--crm-text-1); outline: none;">
+                          <option value="Admin">Admin</option>
+                          <option value="Demo Sales">Demo Sales</option>
+                        </select>
+                      </div>
+                      <button class="em-btn em-btn-primary" (click)="createCalendarEvent()">Create Event</button>
                     </div>
-                  } @else {
-                    <p class="details-empty">No events scheduled for this day.</p>
-                  }
-                </div>
-                
-                <div class="cal-details-right">
-                  <h3 class="details-title">Create New Event</h3>
-                  <div class="cal-event-form">
-                    <div class="form-group" style="margin-bottom: 12px;">
-                      <label class="form-label" style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--crm-text-2); margin-bottom: 4px;">Event Title</label>
-                      <input type="text" [(ngModel)]="newEventTitle" placeholder="e.g. Onboarding Call" class="form-input" style="width: 100%; border: 1px solid var(--crm-border); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; background: var(--crm-bg); color: var(--crm-text-1); outline: none;">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 12px;">
-                      <label class="form-label" style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--crm-text-2); margin-bottom: 4px;">Description</label>
-                      <input type="text" [(ngModel)]="newEventDesc" placeholder="e.g. Kickoff project scope" class="form-input" style="width: 100%; border: 1px solid var(--crm-border); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; background: var(--crm-bg); color: var(--crm-text-1); outline: none;">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 16px;">
-                      <label class="form-label" style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--crm-text-2); margin-bottom: 4px;">Assign To</label>
-                      <select [(ngModel)]="newEventAssign" class="form-input" style="width: 100%; border: 1px solid var(--crm-border); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; background: var(--crm-bg); color: var(--crm-text-1); outline: none;">
-                        <option value="Admin">Admin</option>
-                        <option value="Demo Sales">Demo Sales</option>
-                      </select>
-                    </div>
-                    <button class="em-btn em-btn-primary" (click)="createCalendarEvent()">Create Event</button>
                   </div>
                 </div>
               </div>
+            }
+          } @else {
+            <!-- Availability Slots Scheduler -->
+            <div style="background: var(--crm-card); border: 1px solid var(--crm-border); border-radius: 18px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.03);">
+              <h3 style="font-size: 1rem; font-weight: 600; color: var(--crm-text-1); margin: 0 0 16px;">Schedule a Meeting</h3>
+              
+              <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 24px;">
+                <div style="flex: 1;">
+                  <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--crm-text-2); margin-bottom: 4px;">Select Date</label>
+                  <input type="date" [(ngModel)]="schedulerDate" (change)="loadAvailableSlots()" style="width: 100%; border: 1px solid var(--crm-border); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; background: var(--crm-bg); color: var(--crm-text-1); outline: none;" />
+                </div>
+                <div style="flex: 1;">
+                  <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--crm-text-2); margin-bottom: 4px;">Duration (Minutes)</label>
+                  <select [(ngModel)]="schedulerDuration" (change)="loadAvailableSlots()" style="width: 100%; border: 1px solid var(--crm-border); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; background: var(--crm-bg); color: var(--crm-text-1); outline: none;">
+                    <option [value]="30">30 Minutes</option>
+                    <option [value]="60">60 Minutes</option>
+                  </select>
+                </div>
+              </div>
+
+              @if (loadingSlots) {
+                <div style="text-align: center; padding: 24px; color: var(--crm-text-3);">Checking slots availability...</div>
+              } @else if (schedulerSlots.length === 0) {
+                <div style="text-align: center; padding: 24px; color: var(--crm-text-4);">Choose a date to see availability slots</div>
+              } @else {
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; margin-bottom: 24px;">
+                  <button *ngFor="let slot of schedulerSlots" 
+                          (click)="selectSlotToBook(slot)" 
+                          [disabled]="!slot.available"
+                          style="padding: 10px; border-radius: 8px; border: 1px solid var(--crm-border); font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: center;"
+                          [style.background]="slot.available ? 'var(--crm-bg)' : 'rgba(0,0,0,0.03)'"
+                          [style.color]="slot.available ? 'var(--crm-text-1)' : 'var(--crm-text-4)'"
+                          [style.border-color]="slot.available ? 'var(--crm-primary-soft)' : ''">
+                    {{ slot.time }}
+                    <span style="display: block; font-size: 0.65rem; margin-top: 4px; font-weight: 500;" [style.color]="slot.available ? 'var(--crm-success)' : 'var(--crm-danger)'">
+                      {{ slot.available ? 'Available' : 'Booked' }}
+                    </span>
+                  </button>
+                </div>
+
+                <!-- Booking Modal / Confirm Dialog -->
+                <div *ngIf="selectedSlot" style="background: var(--crm-bg); border: 1px solid var(--crm-border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+                  <h4 style="margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--crm-text-2);">Book Slot: {{ selectedSlot.time }} on {{ schedulerDate }}</h4>
+                  <div style="display: flex; gap: 16px;">
+                    <input type="text" [(ngModel)]="slotBookingTitle" placeholder="Meeting Title (e.g. Intro Demo)" style="flex: 2; border: 1px solid var(--crm-border); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; background: var(--crm-card); color: var(--crm-text-1); outline: none;" />
+                    <button (click)="bookMeetingSlot()" style="flex: 1; padding: 8px 16px; background: var(--crm-primary); border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #fff; cursor: pointer;">Confirm Booking</button>
+                  </div>
+                </div>
+              }
             </div>
           }
         </div>
@@ -375,7 +446,7 @@ import { catchError } from 'rxjs/operators';
                 </table>
               </div>
             } @else {
-              <o-page-renderer [page]="page" [data]="data" (actionTriggered)="handleAction($event)"></o-page-renderer>
+              <o-page-renderer [page]="page" [data]="data" (actionTriggered)="handleAction($event)" (selectionChange)="onSelectionChanged($event)"></o-page-renderer>
             }
           } @else {
             <app-kanban [resource]="resource" [data]="data" (action)="handleAction($event)"></app-kanban>
@@ -404,6 +475,72 @@ import { catchError } from 'rxjs/operators';
                   {{ pdfDownloading ? 'Generating...' : 'Generate Invoice' }}
                 </button>
               }
+            </div>
+          </div>
+
+          <!-- Floating Bottom Bar for Bulk operations -->
+          <div class="pdf-floating-bar" [style.left]="sidebarOffset" *ngIf="selectedBulkRows.length > 0 && resource !== 'quotes' && resource !== 'invoices'">
+            <div class="pdf-bar-left">
+              <button class="pdf-bar-close-btn" (click)="clearBulkSelection()">Cancel</button>
+              <span class="pdf-bar-row-info">
+                <strong>Selected {{ selectedBulkRows.length }} {{ resource }}:</strong> 
+              </span>
+            </div>
+            <div class="pdf-bar-right">
+              <button class="pdf-bar-action-btn pdf-btn-secondary" (click)="openBulkEditDrawer()" style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); color: var(--crm-primary);">
+                Bulk Edit
+              </button>
+              <button class="pdf-bar-action-btn pdf-btn-secondary" (click)="openBulkAssignDrawer()" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #D97706;">
+                Bulk Assign
+              </button>
+              <button class="pdf-bar-action-btn pdf-btn-secondary" (click)="openBulkStatusDrawer()" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #059669;" *ngIf="resource === 'leads' || resource === 'deals' || resource === 'accounts'">
+                Bulk Status
+              </button>
+              <button class="pdf-bar-action-btn pdf-btn-secondary" (click)="bulkDeleteSelected()" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--crm-danger);">
+                Bulk Delete
+              </button>
+            </div>
+          </div>
+
+          <!-- Bulk Action Modals -->
+          <div *ngIf="bulkActionDrawerOpen" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 24px;">
+            <div style="background: var(--crm-card); border: 1px solid var(--crm-border); border-radius: 12px; width: 400px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+              <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--crm-text-1); margin: 0 0 16px;">{{ bulkActionTitle }}</h3>
+              
+              <div *ngIf="bulkActionType === 'edit'" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+                <div>
+                  <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--crm-text-2); margin-bottom: 4px;">Select Field</label>
+                  <select [(ngModel)]="bulkEditField" style="width: 100%; border: 1px solid var(--crm-border); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; background: var(--crm-bg); color: var(--crm-text-1); outline: none;">
+                    <option value="">-- Choose Field --</option>
+                    <option *ngFor="let opt of getBulkEditFields()" [value]="opt.value">{{ opt.label }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--crm-text-2); margin-bottom: 4px;">New Value</label>
+                  <input type="text" [(ngModel)]="bulkEditValue" placeholder="Enter new value..." style="width: 100%; border: 1px solid var(--crm-border); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; background: var(--crm-bg); color: var(--crm-text-1); outline: none;" />
+                </div>
+              </div>
+
+              <div *ngIf="bulkActionType === 'assign'" style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--crm-text-2); margin-bottom: 4px;">Select New Owner</label>
+                <select [(ngModel)]="bulkAssignOwner" style="width: 100%; border: 1px solid var(--crm-border); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; background: var(--crm-bg); color: var(--crm-text-1); outline: none;">
+                  <option value="">-- Select Owner --</option>
+                  <option *ngFor="let u of salesUsers" [value]="u.username">{{ u.fullName }} ({{ u.username }})</option>
+                </select>
+              </div>
+
+              <div *ngIf="bulkActionType === 'status'" style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--crm-text-2); margin-bottom: 4px;">Select Status / Stage</label>
+                <select [(ngModel)]="bulkStatusValue" style="width: 100%; border: 1px solid var(--crm-border); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; background: var(--crm-bg); color: var(--crm-text-1); outline: none;">
+                  <option value="">-- Select Status --</option>
+                  <option *ngFor="let st of getBulkStatuses()" [value]="st.value">{{ st.label }}</option>
+                </select>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button (click)="bulkActionDrawerOpen = false" style="padding: 6px 14px; background: none; border: 1px solid var(--crm-border); border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: var(--crm-text-2); cursor: pointer;">Cancel</button>
+                <button (click)="submitBulkAction()" style="padding: 6px 16px; background: var(--crm-primary); border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #fff; cursor: pointer;">Save Changes</button>
+              </div>
             </div>
           </div>
 
@@ -589,6 +726,27 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
   selectedRow: any = null;
   pdfDownloading = false;
   private readonly http = inject(HttpClient);
+  base = `http://${globalThis.location?.hostname || 'localhost'}:8085`;
+
+  // Bulk operations states
+  selectedBulkRows: any[] = [];
+  bulkActionDrawerOpen = false;
+  bulkActionType: 'edit' | 'assign' | 'status' | '' = '';
+  bulkActionTitle = '';
+  bulkEditField = '';
+  bulkEditValue = '';
+  bulkAssignOwner = '';
+  bulkStatusValue = '';
+  salesUsers: any[] = [];
+
+  // Calendar Scheduler / Sync states
+  calendarSubMode: 'calendar' | 'scheduler' = 'calendar';
+  schedulerDate = '';
+  schedulerDuration = 30;
+  schedulerSlots: any[] = [];
+  selectedSlot: any = null;
+  slotBookingTitle = '';
+  loadingSlots = false;
 
   columnFilters: Record<string, string> = {};
   tempFilters: Record<string, string> = {};
@@ -710,6 +868,7 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
 
   private loadPage(): void {
     this.selectedRow = null;
+    this.selectedBulkRows = [];
     this.loading = true;
     this.error = null;
     this.page = null;
@@ -738,6 +897,7 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
 
   private loadData(api: string): void {
     this.loading = true;
+    this.selectedBulkRows = [];
     this.cdr.markForCheck();
 
     const sub = this.store.getList(api).subscribe({
@@ -1319,5 +1479,248 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
     }
     
     return rows;
+  }
+
+  onSelectionChanged(rows: any[]) {
+    this.selectedBulkRows = rows;
+    this.cdr.detectChanges();
+  }
+
+  clearBulkSelection() {
+    this.selectedBulkRows = [];
+    this.cdr.detectChanges();
+  }
+
+  getBulkEditFields() {
+    if (this.resource === 'leads' || this.resource === 'contacts') {
+      return [
+        { label: 'Industry', value: 'industry' },
+        { label: 'City', value: 'city' },
+        { label: 'Country', value: 'country' },
+        { label: 'Address', value: 'address' },
+        { label: 'Job Title', value: 'jobtitle' },
+        { label: 'Website', value: 'website' }
+      ];
+    }
+    if (this.resource === 'accounts') {
+      return [
+        { label: 'Industry', value: 'industry' },
+        { label: 'Phone', value: 'phone' },
+        { label: 'Country', value: 'country' },
+        { label: 'Website', value: 'website' }
+      ];
+    }
+    if (this.resource === 'deals') {
+      return [
+        { label: 'Stage', value: 'stage' },
+        { label: 'Amount', value: 'amount' }
+      ];
+    }
+    return [];
+  }
+
+  getBulkStatuses() {
+    if (this.resource === 'leads') {
+      return [
+        { label: 'New', value: 'NEW' },
+        { label: 'Contacted', value: 'CONTACTED' },
+        { label: 'Qualified', value: 'QUALIFIED' },
+        { label: 'Unqualified', value: 'UNQUALIFIED' }
+      ];
+    }
+    if (this.resource === 'deals') {
+      return [
+        { label: 'Prospecting', value: 'Prospecting' },
+        { label: 'Qualification', value: 'Qualification' },
+        { label: 'Proposal', value: 'Proposal' },
+        { label: 'Negotiation', value: 'Negotiation' },
+        { label: 'Closed Won', value: 'Closed Won' },
+        { label: 'Closed Lost', value: 'Closed Lost' }
+      ];
+    }
+    if (this.resource === 'accounts') {
+      return [
+        { label: 'Active', value: 'Active' },
+        { label: 'Inactive', value: 'Inactive' }
+      ];
+    }
+    return [];
+  }
+
+  openBulkEditDrawer() {
+    this.bulkActionType = 'edit';
+    this.bulkActionTitle = 'Bulk Edit Fields';
+    this.bulkEditField = '';
+    this.bulkEditValue = '';
+    this.bulkActionDrawerOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  openBulkAssignDrawer() {
+    this.bulkActionType = 'assign';
+    this.bulkActionTitle = 'Bulk Assign Owner';
+    this.bulkAssignOwner = '';
+    this.bulkActionDrawerOpen = true;
+    this.loadSalesUsersForBulk();
+  }
+
+  openBulkStatusDrawer() {
+    this.bulkActionType = 'status';
+    this.bulkActionTitle = 'Bulk Update Status';
+    this.bulkStatusValue = '';
+    this.bulkActionDrawerOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  loadSalesUsersForBulk() {
+    const token = localStorage.getItem('accessToken') ?? '';
+    const hdrs = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<any[]>(`${this.base}/api/v1/users/sales`, { headers: hdrs })
+      .subscribe({
+        next: data => {
+          this.salesUsers = data.map(u => ({ username: u.username, fullName: u.fullName }));
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.salesUsers = [
+            { username: 'admin', fullName: 'System Admin' },
+            { username: 'sales_rep', fullName: 'Sales Representative' }
+          ];
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  bulkDeleteSelected() {
+    if (!confirm(`Are you sure you want to delete these ${this.selectedBulkRows.length} records?`)) return;
+    const token = localStorage.getItem('accessToken') ?? '';
+    const hdrs = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    const ids = this.selectedBulkRows.map(r => r.id);
+    this.http.post<any>(`${this.base}/api/v1/bulk/delete?module=${this.resource}`, ids, { headers: hdrs })
+      .subscribe({
+        next: () => {
+          alert('Bulk delete completed.');
+          this.selectedBulkRows = [];
+          if (this.page) {
+            this.loadData(this.page.api);
+          }
+          this.cdr.detectChanges();
+        },
+        error: err => alert(err?.error?.message || 'Bulk delete failed.')
+      });
+  }
+
+  submitBulkAction() {
+    const token = localStorage.getItem('accessToken') ?? '';
+    const hdrs = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    const ids = this.selectedBulkRows.map(r => r.id);
+
+    let url = `${this.base}/api/v1/bulk/`;
+    if (this.bulkActionType === 'edit') {
+      if (!this.bulkEditField) return alert('Choose field.');
+      url += `edit?module=${this.resource}&fieldName=${this.bulkEditField}&fieldValue=${encodeURIComponent(this.bulkEditValue)}`;
+    } else if (this.bulkActionType === 'assign') {
+      if (!this.bulkAssignOwner) return alert('Choose owner.');
+      url += `assign?module=${this.resource}&owner=${this.bulkAssignOwner}`;
+    } else if (this.bulkActionType === 'status') {
+      if (!this.bulkStatusValue) return alert('Choose status.');
+      url += `status?module=${this.resource}&status=${this.bulkStatusValue}`;
+    } else {
+      return;
+    }
+
+    this.http.post<any>(url, ids, { headers: hdrs }).subscribe({
+      next: () => {
+        alert('Bulk operation completed successfully.');
+        this.bulkActionDrawerOpen = false;
+        this.selectedBulkRows = [];
+        if (this.page) {
+          this.loadData(this.page.api);
+        }
+        this.cdr.detectChanges();
+      },
+      error: err => alert(err?.error?.message || 'Bulk action failed.')
+    });
+  }
+
+  syncCalendarProvider(provider: 'google' | 'outlook') {
+    const token = localStorage.getItem('accessToken') ?? '';
+    const hdrs = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    const url = `${this.base.replace('/emails', '/calendar-events')}/sync/${provider}`;
+    this.http.post<any>(url, {}, { headers: hdrs })
+      .subscribe({
+        next: (res) => {
+          alert(`Successfully synced ${res.syncedCount} events from ${res.provider}!`);
+          this.loadCustomResource();
+        },
+        error: () => alert(`Failed to sync calendar with ${provider}.`)
+      });
+  }
+
+  loadAvailableSlots() {
+    if (!this.schedulerDate) return;
+    this.loadingSlots = true;
+    this.selectedSlot = null;
+    this.cdr.detectChanges();
+
+    const token = localStorage.getItem('accessToken') ?? '';
+    const hdrs = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    const url = `${this.base.replace('/emails', '/calendar-events')}/slots?date=${this.schedulerDate}&durationMinutes=${this.schedulerDuration}`;
+    
+    this.http.get<any[]>(url, { headers: hdrs })
+      .subscribe({
+        next: (slots) => {
+          this.schedulerSlots = slots;
+          this.loadingSlots = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.schedulerSlots = [];
+          this.loadingSlots = false;
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  selectSlotToBook(slot: any) {
+    this.selectedSlot = slot;
+    this.slotBookingTitle = '';
+    this.cdr.detectChanges();
+  }
+
+  bookMeetingSlot() {
+    if (!this.slotBookingTitle) return alert('Enter title.');
+    
+    const token = localStorage.getItem('accessToken') ?? '';
+    const hdrs = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    
+    const startStr = `${this.schedulerDate}T${this.selectedSlot.time}`;
+    const startDt = new Date(startStr);
+    const endDt = new Date(startDt.getTime() + this.schedulerDuration * 60 * 1000);
+    
+    const offset = startDt.getTimezoneOffset();
+    const localStart = new Date(startDt.getTime() - offset * 60000).toISOString().slice(0, 19);
+    const localEnd = new Date(endDt.getTime() - offset * 60000).toISOString().slice(0, 19);
+
+    const payload = {
+      title: this.slotBookingTitle,
+      description: `Booked via Meeting Scheduler Slot Booker`,
+      startDateTime: localStart,
+      endDateTime: localEnd,
+      timeZone: 'Asia/Kolkata',
+      colorCategory: '#10B981'
+    };
+
+    this.http.post<any>(`${this.base.replace('/emails', '/calendar-events')}`, payload, { headers: hdrs })
+      .subscribe({
+        next: () => {
+          alert('Meeting booked successfully!');
+          this.selectedSlot = null;
+          this.slotBookingTitle = '';
+          this.loadAvailableSlots();
+          this.loadCustomResource();
+        },
+        error: () => alert('Failed to book meeting slot.')
+      });
   }
 }
