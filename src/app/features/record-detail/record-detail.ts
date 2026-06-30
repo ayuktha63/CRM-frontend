@@ -208,7 +208,7 @@ export class RecordDetailComponent implements OnInit, OnDestroy {
       .subscribe(data => {
         this.tabData.update(v => ({ ...v, [tab.key]: data }));
         this.tabLoading.update(v => ({ ...v, [tab.key]: false }));
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }));
   }
 
@@ -216,8 +216,8 @@ export class RecordDetailComponent implements OnInit, OnDestroy {
     const id = this.route.snapshot.params['id'] as string;
     const tab = this.config?.tabs.find(t => t.key === tabKey);
     if (!tab) return;
-    this.tabData.update(v => { const c = { ...v }; delete c[tabKey]; return c; });
     this.fetchTab(tab, id);
+    this.cdr.detectChanges();
   }
 
   goBack() {
@@ -295,19 +295,21 @@ export class RecordDetailComponent implements OnInit, OnDestroy {
 
     this.addSubmitting = true;
     this.addError = null;
-    this.cdr.markForCheck();
+    this.cdr.detectChanges();
 
     this._subs.add(this.http.post<unknown>(api, payload, { headers: this.hdrs() }).subscribe({
       next: () => {
         this.addSubmitting = false;
         this.showSuccess('Record added.');
         this.reloadTab(tab.key);
+        this.loadTimeline();
         this.closeAddPanel();
+        this.cdr.detectChanges();
       },
       error: err => {
         this.addError = (err?.error?.message as string | undefined) ?? 'Failed to add record.';
         this.addSubmitting = false;
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }
     }));
   }
