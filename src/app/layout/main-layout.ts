@@ -108,8 +108,12 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       });
   }
 
-  selectSearchResult(moduleName: string, id: number): void {
+  selectSearchResult(moduleName: string, id: number, item?: any): void {
     let routeName = moduleName.toLowerCase();
+    if (item && item.targetModule) {
+      routeName = item.targetModule.toLowerCase();
+      id = item.targetId;
+    }
     if (routeName === 'crm_tasks') routeName = 'tasks';
     this.router.navigate([`/${routeName}/${id}`]);
     this.clearSearch();

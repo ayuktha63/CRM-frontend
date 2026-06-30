@@ -136,7 +136,7 @@
                 <div *ngIf="cat.value.length > 0">
                   <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--crm-primary); margin-bottom: 4px; border-left: 2px solid var(--crm-primary); padding-left: 6px;">{{ cat.key }}</div>
                   <div style="display: flex; flex-direction: column; gap: 2px;">
-                    <div *ngFor="let item of cat.value" (click)="selectSearchResult(cat.key, item.id)" style="padding: 6px 8px; border-radius: 4px; font-size: 0.82rem; color: var(--crm-text-1); cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='var(--crm-bg)'" onmouseout="this.style.background='transparent'">
+                    <div *ngFor="let item of cat.value" (click)="selectSearchResult(cat.key, item.id, item)" style="padding: 6px 8px; border-radius: 4px; font-size: 0.82rem; color: var(--crm-text-1); cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='var(--crm-bg)'" onmouseout="this.style.background='transparent'">
                       {{ item.title }}
                     </div>
                   </div>
