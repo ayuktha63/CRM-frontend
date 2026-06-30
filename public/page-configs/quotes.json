@@ -102,7 +102,8 @@
     "edit": true,
     "refresh": true,
     "export": true,
-    "duplicate": true
+    "duplicate": true,
+    "print": true
   },
   "contextMenuActions": [
     {

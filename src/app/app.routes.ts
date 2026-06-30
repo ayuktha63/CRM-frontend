@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { adminGuard } from './core/guards/admin.guard';
 import { LoginComponent } from './features/auth/login/login';
 import { MainLayoutComponent } from './layout/main-layout';
 
@@ -135,7 +136,8 @@ export const routes: Routes = [
         path: 'customization',
         loadComponent: () =>
           import('./features/list-page/list-page').then(m => m.ListPageComponent),
-        data: { resource: 'customization' }
+        data: { resource: 'customization' },
+        canActivate: [authGuard, adminGuard]
       },
       {
         path: 'inventory',
@@ -147,7 +149,8 @@ export const routes: Routes = [
         path: 'dashboard-builder',
         loadComponent: () =>
           import('./features/list-page/list-page').then(m => m.ListPageComponent),
-        data: { resource: 'dashboard-builder' }
+        data: { resource: 'dashboard-builder' },
+        canActivate: [authGuard, adminGuard]
       },
       {
         path: 'settings',

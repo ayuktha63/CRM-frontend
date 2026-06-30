@@ -16,8 +16,6 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   PageRendererComponent,
-  OTableToolsComponent,
-  ToggleTabsComponent,
   PageAction,
   PageConfig,
   OToastService,
@@ -42,8 +40,6 @@ import { catchError } from 'rxjs/operators';
     CommonModule,
     FormsModule,
     PageRendererComponent,
-    OTableToolsComponent,
-    ToggleTabsComponent,
     KanbanComponent,
     CalendarWorkspaceComponent,
     CustomizationComponent,
@@ -111,101 +107,7 @@ import { catchError } from 'rxjs/operators';
       @else if (page && !error) {
         <div class="lp-workspace-wrapper" style="position: relative; padding-bottom: 80px;">
           @if (viewMode === 'table') {
-            @if (resource === 'quotes' || resource === 'invoices') {
-              <!-- Page Header & Toggle Tabs -->
-              <div class="o-page-header" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px;">
-                <div class="o-page-title-row">
-                  <h2 class="o-page-title" style="font-size: 1.4rem; font-weight: 700; color: var(--crm-text-1); margin: 0;">{{ page?.title }}</h2>
-                </div>
-                
-                @if (page?.toggleButton?.elements?.length) {
-                  <o-toggle-tabs
-                    [tabs]="page!.toggleButton!.elements"
-                    [activeTab]="activeStatusTab()"
-                    (tabChange)="activeStatusTab.set($event)">
-                  </o-toggle-tabs>
-                }
-              </div>
-
-              <o-table-tools
-                [config]="{ add: true, edit: true, refresh: true, clear: true, export: true, print: true }"
-                [selectedCount]="selectedBulkRows.length"
-                (toolAction)="onCustomTableToolAction($event)"
-              ></o-table-tools>
-
-              <div class="custom-table-container" style="margin-top: 12px;">
-                <table class="custom-data-table">
-                  <thead>
-                    <tr>
-                      <th class="chk-col">
-                        <input type="checkbox" 
-                               [checked]="filteredTableData.length > 0 && selectedBulkRows.length === filteredTableData.length"
-                               (change)="toggleSelectAllQuotesInvoices()" 
-                               class="row-chk" />
-                      </th>
-                      <th *ngFor="let col of page?.tableList || []" style="position: relative;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
-                          <span>{{ col.label }}</span>
-                          <div style="position: relative; display: inline-flex; align-items: center;" (click)="$event.stopPropagation()">
-                            <button class="th-filter-btn" [class.active]="hasFilter(col.name)" (click)="toggleFilterPopup(col.name)" style="background: none; border: none; padding: 4px; color: var(--crm-text-3); cursor: pointer; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.12s;" type="button">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-                              </svg>
-                            </button>
-                            
-                            @if (activeFilterField === col.name) {
-                              <div class="th-filter-popup" style="position: absolute; top: 100%; right: 0; margin-top: 8px; width: 220px; background: var(--crm-card); border: 1px solid var(--crm-border); border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); padding: 12px; z-index: 50; text-align: left; white-space: normal; display: flex; flex-direction: column; gap: 8px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                  <span style="font-size: 0.78rem; font-weight: 600; color: var(--crm-text-1);">Filter {{ col.label }}</span>
-                                  <button (click)="closeFilterPopup()" style="background: none; border: none; font-size: 1.1rem; color: var(--crm-text-3); cursor: pointer; line-height: 1; padding: 0 4px;" type="button">×</button>
-                                </div>
-                                <div>
-                                  <input type="text" 
-                                         [value]="tempFilters[col.name] || ''"
-                                         (input)="onFilterInput($event, col.name)"
-                                         (keydown.enter)="applyFilter(col.name)"
-                                         placeholder="Search value..." 
-                                         style="width: 100%; border: 1px solid var(--crm-border); border-radius: 6px; padding: 6px 10px; font-size: 0.8rem; outline: none; background: var(--crm-bg); color: var(--crm-text-1);" />
-                                </div>
-                                <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px;">
-                                  <button (click)="clearFilter(col.name)" style="padding: 4px 10px; font-size: 0.72rem; font-weight: 600; border-radius: 4px; cursor: pointer; border: 1px solid var(--crm-border); background: none; color: var(--crm-text-2);" type="button">Clear</button>
-                                  <button (click)="applyFilter(col.name)" style="padding: 4px 10px; font-size: 0.72rem; font-weight: 600; border-radius: 4px; cursor: pointer; border: none; background: var(--crm-primary); color: #fff;" type="button">Apply</button>
-                                </div>
-                              </div>
-                            }
-                          </div>
-                        </div>
-                      </th>
-                      <th class="actions-col">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let row of filteredTableData" [class.selected]="isQuoteInvoiceRowSelected(row)">
-                      <td class="chk-col">
-                        <input type="checkbox" [checked]="isQuoteInvoiceRowSelected(row)" (change)="toggleSelectQuoteInvoiceRow(row)" class="row-chk" />
-                      </td>
-                      <td *ngFor="let col of page?.tableList || []">
-                        @if (col.pipe === 'date') {
-                          {{ row[col.name] | date:'mediumDate' }}
-                        } @else if (col.pipe === 'status') {
-                          <span class="status-badge" [attr.data-status]="row[col.name]">{{ row[col.name] }}</span>
-                        } @else {
-                          {{ row[col.name] || '—' }}
-                        }
-                      </td>
-                      <td class="actions-col">
-                        <button class="row-action-btn" (click)="handleAction({ action: 'view', row: row })">View</button>
-                      </td>
-                    </tr>
-                    <tr *ngIf="filteredTableData.length === 0">
-                      <td [attr.colspan]="(page?.tableList?.length ?? 0) + 2" class="empty-row">No records found</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            } @else {
               <o-page-renderer [page]="page" [data]="data" (actionTriggered)="handleAction($event)" (selectionChange)="onSelectionChanged($event)"></o-page-renderer>
-            }
           } @else {
             <app-kanban [resource]="resource" [data]="data" (action)="handleAction($event)"></app-kanban>
           }
