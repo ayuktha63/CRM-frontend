@@ -7,6 +7,15 @@ import { MainLayoutComponent } from './layout/main-layout';
 export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
+  {
+    path: 'sso',
+    loadComponent: () => import('./features/auth/sso/sso').then(m => m.SsoComponent)
+  },
+  {
+    path: 'license-pending',
+    loadComponent: () => import('./features/license/license-pending').then(m => m.LicensePendingComponent),
+    canActivate: [authGuard]
+  },
 
   {
     path: '',
@@ -169,7 +178,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/list-page/list-page').then(m => m.ListPageComponent),
         data: { resource: 'active-sessions' }
-      }
+      },
+      {
+        path: 'system-admin',
+        loadComponent: () =>
+          import('./features/system-admin/system-admin').then(m => m.SystemAdminComponent),
+        canActivate: [authGuard, adminGuard]
+      },
     ]
   },
 

@@ -1,0 +1,6 @@
+{
+  "crmApiUrl": "http://localhost:8085",
+  "opacApiUrl": "http://localhost:8082",
+  "opacAppUrl": "http://localhost:8082",
+  "crmAppUrl": "http://localhost:4300"
+}

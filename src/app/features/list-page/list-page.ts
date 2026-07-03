@@ -30,6 +30,7 @@ import {
   PageStoreService
 } from 'orque-ui';
 import { KanbanComponent } from './kanban';
+import { SysadminSettingsComponent } from '../system-admin/sysadmin-settings';
 import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -48,7 +49,8 @@ import { catchError } from 'rxjs/operators';
     InventoryComponent,
     ReportBuilderComponent,
     ReportsComponent,
-    UserSettingsComponent
+    UserSettingsComponent,
+    SysadminSettingsComponent
   ],
   template: `
     <div class="lp-container">
@@ -101,7 +103,11 @@ import { catchError } from 'rxjs/operators';
         <app-dashboard-builder></app-dashboard-builder>
       }
       @else if (resource === 'user-settings') {
-        <app-user-settings></app-user-settings>
+        @if (showLicenseSettings()) {
+          <app-sysadmin-settings></app-sysadmin-settings>
+        } @else {
+          <app-user-settings></app-user-settings>
+        }
       }
 
       @else if (page && !error) {
@@ -112,27 +118,42 @@ import { catchError } from 'rxjs/operators';
             <app-kanban [resource]="resource" [data]="data" (action)="handleAction($event)"></app-kanban>
           }
 
-          <!-- Floating Bottom Bar for PDF operations -->
-          <div class="pdf-floating-bar" [style.left]="sidebarOffset" *ngIf="selectedRow && (resource === 'quotes' || resource === 'invoices')">
+          <!-- Floating Bottom Bar for PDF operations (quotes & invoices) -->
+          <div class="pdf-floating-bar" [style.left]="sidebarOffset"
+               *ngIf="(selectedBulkRows.length > 0 || selectedRow) && (resource === 'quotes' || resource === 'invoices')">
             <div class="pdf-bar-left">
-              <button class="pdf-bar-close-btn" (click)="selectedRow = null">Close</button>
+              <button class="pdf-bar-close-btn" (click)="clearPdfSelection()">Close</button>
               <span class="pdf-bar-row-info">
-                <strong>Selected {{ resource === 'invoices' ? 'Invoice' : 'Quote' }}:</strong> 
-                {{ selectedRow.invoiceNumber || selectedRow.quoteNumber }} (₹{{ selectedRow.amount }})
+                @if (selectedBulkRows.length > 1) {
+                  <strong>{{ selectedBulkRows.length }} {{ resource === 'invoices' ? 'Invoices' : 'Quotes' }} selected</strong>
+                } @else {
+                  <strong>Selected {{ resource === 'invoices' ? 'Invoice' : 'Quote' }}:</strong>
+                  {{ pdfActiveRow?.invoiceNumber || pdfActiveRow?.quoteNumber }}
+                  @if (pdfActiveRow?.amount) {
+                    <span style="margin-left:6px;color:var(--crm-text-3);">(₹{{ pdfActiveRow.amount }})</span>
+                  }
+                }
               </span>
             </div>
             <div class="pdf-bar-right">
               @if (resource === 'quotes') {
-                <button class="pdf-bar-action-btn pdf-btn-secondary" (click)="generateInvoiceFromQuote()" [disabled]="pdfDownloading || selectedRow.status !== 'Accepted'">
-                  Generate Invoice
+                <button class="pdf-bar-action-btn pdf-btn-secondary"
+                        (click)="generateInvoiceFromQuote()"
+                        [disabled]="pdfDownloading || selectedBulkRows.length > 1 || pdfActiveRow?.status !== 'Accepted'"
+                        [title]="selectedBulkRows.length > 1 ? 'Select a single Accepted quote to convert' : ''">
+                  Convert to Invoice
                 </button>
-                <button class="pdf-bar-action-btn pdf-btn-primary" (click)="downloadPdfForSelected('quotes')" [disabled]="pdfDownloading">
-                  {{ pdfDownloading ? 'Generating...' : 'Generate Quotation' }}
+                <button class="pdf-bar-action-btn pdf-btn-primary"
+                        (click)="downloadSelectedPdfs('quotes')"
+                        [disabled]="pdfDownloading">
+                  {{ pdfDownloading ? 'Generating...' : (selectedBulkRows.length > 1 ? 'Download All PDFs (' + selectedBulkRows.length + ')' : 'Generate Quotation PDF') }}
                 </button>
               }
               @if (resource === 'invoices') {
-                <button class="pdf-bar-action-btn pdf-btn-primary" (click)="downloadPdfForSelected('invoices')" [disabled]="pdfDownloading">
-                  {{ pdfDownloading ? 'Generating...' : 'Generate Invoice' }}
+                <button class="pdf-bar-action-btn pdf-btn-primary"
+                        (click)="downloadSelectedPdfs('invoices')"
+                        [disabled]="pdfDownloading">
+                  {{ pdfDownloading ? 'Generating...' : (selectedBulkRows.length > 1 ? 'Download All PDFs (' + selectedBulkRows.length + ')' : 'Generate Invoice PDF') }}
                 </button>
               }
             </div>
@@ -207,6 +228,70 @@ import { catchError } from 'rxjs/operators';
         </div>
       }
     </div>
+
+    <!-- Quote / Invoice detail preview modal -->
+    @if (previewRecord && (resource === 'quotes' || resource === 'invoices')) {
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:3000;padding:24px;"
+           (click)="previewRecord=null">
+        <div style="background:var(--crm-card);border:1px solid var(--crm-border);border-radius:16px;width:100%;max-width:520px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.2);display:flex;flex-direction:column;overflow:hidden;"
+             (click)="$event.stopPropagation()">
+          <!-- header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--crm-border);">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:0.68rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:20px;"
+                    [style.background]="resource==='invoices'?'rgba(16,185,129,0.1)':'rgba(99,102,241,0.1)'"
+                    [style.color]="resource==='invoices'?'#10B981':'#6366F1'">
+                {{ resource === 'invoices' ? 'Invoice' : 'Quote' }}
+              </span>
+              <h2 style="font-size:1.05rem;font-weight:700;color:var(--crm-text-1);margin:0;">
+                {{ previewRecord.quoteNumber || previewRecord.invoiceNumber || '—' }}
+              </h2>
+            </div>
+            <button (click)="previewRecord=null" aria-label="Close preview"
+                    style="width:30px;height:30px;border-radius:8px;border:none;background:none;color:var(--crm-text-3);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <!-- body -->
+          <div style="padding:20px 24px;display:flex;flex-direction:column;gap:10px;max-height:60vh;overflow-y:auto;">
+            @for (f of (resource==='invoices' ? invoicePreviewFields : quotePreviewFields); track f.key) {
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;border-radius:8px;background:var(--crm-bg);border:1px solid var(--crm-border);">
+                <span style="font-size:0.78rem;font-weight:600;color:var(--crm-text-3);white-space:nowrap;">{{ f.label }}</span>
+                <span style="font-size:0.85rem;font-weight:500;color:var(--crm-text-1);text-align:right;">
+                  @if (f.type === 'currency') {
+                    ₹{{ previewRecord[f.key] | number:'1.2-2' }}
+                  } @else if (f.type === 'date') {
+                    {{ previewRecord[f.key] ? (previewRecord[f.key] | date:'d MMM y') : '—' }}
+                  } @else if (f.type === 'status') {
+                    <span [attr.style]="previewStatusClass(previewRecord[f.key])">{{ previewRecord[f.key] || '—' }}</span>
+                  } @else {
+                    {{ previewRecord[f.key] || '—' }}
+                  }
+                </span>
+              </div>
+            }
+          </div>
+          <!-- footer -->
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid var(--crm-border);">
+            <button (click)="previewRecord=null"
+                    style="padding:7px 16px;border:1px solid var(--crm-border);border-radius:8px;background:none;font-size:0.8rem;font-weight:600;color:var(--crm-text-2);cursor:pointer;">
+              Close
+            </button>
+            <button (click)="selectedRow=previewRecord;downloadPdfForSelected(resource==='invoices'?'invoices':'quotes');previewRecord=null"
+                    [disabled]="pdfDownloading"
+                    style="display:flex;align-items:center;gap:6px;padding:7px 16px;border:none;border-radius:8px;background:#6366F1;color:#fff;font-size:0.8rem;font-weight:600;cursor:pointer;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              {{ pdfDownloading ? 'Generating...' : 'Download PDF' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   `,
   styles: [`
     :host { display: block; height: 100%; }
@@ -380,10 +465,56 @@ import { catchError } from 'rxjs/operators';
 export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
   @Input() resource = '';
 
+  showLicenseSettings(): boolean {
+    const raw = localStorage.getItem('crmUser');
+    if (!raw) return false;
+    try {
+      const user = JSON.parse(raw);
+      const role = (user?.role || user?.roleName || '').toUpperCase();
+      return role === 'SYSTEM_ADMIN' || role === 'ADMIN';
+    } catch {
+      return false;
+    }
+  }
+
   private readonly route  = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
   selectedRow: any = null;
+  previewRecord: any = null;
+
+  readonly quotePreviewFields = [
+    { label: 'Quote Number', key: 'quoteNumber',  type: 'text' },
+    { label: 'Contact',      key: 'contact',      type: 'text' },
+    { label: 'Account',      key: 'account',      type: 'text' },
+    { label: 'Amount',       key: 'amount',       type: 'currency' },
+    { label: 'Valid Until',  key: 'validUntil',   type: 'date' },
+    { label: 'Status',       key: 'status',       type: 'status' },
+    { label: 'Created By',   key: 'createdBy',    type: 'text' },
+  ];
+
+  readonly invoicePreviewFields = [
+    { label: 'Invoice Number', key: 'invoiceNumber', type: 'text' },
+    { label: 'Contact',        key: 'contact',       type: 'text' },
+    { label: 'Account',        key: 'account',       type: 'text' },
+    { label: 'Amount',         key: 'amount',        type: 'currency' },
+    { label: 'Due Date',       key: 'dueDate',       type: 'date' },
+    { label: 'Paid Date',      key: 'paidDate',      type: 'date' },
+    { label: 'Status',         key: 'status',        type: 'status' },
+    { label: 'Created By',     key: 'createdBy',     type: 'text' },
+  ];
+
+  previewStatusClass(status: string): string {
+    if (!status) return '';
+    const s = status.toLowerCase();
+    const base = 'font-size:0.72rem;font-weight:700;letter-spacing:0.03em;padding:2px 9px;border-radius:20px;text-transform:capitalize;';
+    if (['active','accepted','paid'].includes(s))  return `${base}background:rgba(16,185,129,0.1);color:#059669`;
+    if (['draft','inactive'].includes(s))          return `${base}background:rgba(148,163,184,0.1);color:#64748b`;
+    if (['pending','sent','overdue'].includes(s))  return `${base}background:rgba(245,158,11,0.1);color:#d97706`;
+    if (['rejected','cancelled'].includes(s))      return `${base}background:rgba(239,68,68,0.1);color:#dc2626`;
+    return base;
+  }
+
   pdfDownloading = false;
   private readonly http = inject(HttpClient);
   base = `http://${globalThis.location?.hostname || 'localhost'}:8085`;
@@ -546,7 +677,12 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
 
     switch (event.action) {
       case 'view':
+      case 'rowClick': {
+        if ((this.resource === 'quotes' || this.resource === 'invoices') && event.row) {
+          this.previewRecord = event.row;
+        }
         break;
+      }
 
       case 'navigate': {
         if (uuid) this.router.navigate(['/', this.resource, uuid]);
@@ -798,12 +934,16 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   generateInvoiceFromQuote(): void {
-    if (!this.selectedRow || this.pdfDownloading) return;
-    
-    if (this.selectedRow.status !== 'Accepted') {
+    const active = this.pdfActiveRow;
+    if (!active || this.pdfDownloading) return;
+
+    if (active.status !== 'Accepted') {
       this.toast.addError('Error', 'Invoice can only be generated from an Accepted quote.');
       return;
     }
+
+    // Ensure selectedRow is set so post-generation cleanup works correctly
+    this.selectedRow = active;
 
     const quoteId = this.selectedRow.id;
     this.pdfDownloading = true;
@@ -948,12 +1088,75 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
 
   onSelectionChanged(rows: any[]) {
     this.selectedBulkRows = rows;
+    // For quotes/invoices the PDF bar derives from selectedBulkRows;
+    // clear the single-click selectedRow if user switches to checkbox selection.
+    if ((this.resource === 'quotes' || this.resource === 'invoices') && rows.length > 0) {
+      this.selectedRow = null;
+    }
+    this.cdr.detectChanges();
+  }
+
+  /** The row that drives the single-record labels/status checks in the PDF bar. */
+  get pdfActiveRow(): any {
+    return this.selectedBulkRows.length > 0 ? this.selectedBulkRows[0] : this.selectedRow;
+  }
+
+  clearPdfSelection() {
+    this.selectedRow = null;
+    this.selectedBulkRows = [];
     this.cdr.detectChanges();
   }
 
   clearBulkSelection() {
     this.selectedBulkRows = [];
     this.cdr.detectChanges();
+  }
+
+  /**
+   * Download PDFs for all currently checked rows (quotes or invoices).
+   * Falls back to selectedRow for backwards compatibility with row-click selection.
+   */
+  downloadSelectedPdfs(type: 'quotes' | 'invoices'): void {
+    const rows = this.selectedBulkRows.length > 0 ? this.selectedBulkRows : (this.selectedRow ? [this.selectedRow] : []);
+    if (rows.length === 0 || this.pdfDownloading) return;
+    this.pdfDownloading = true;
+    const token = localStorage.getItem('accessToken') ?? '';
+    const hdrs = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    const downloadNext = (index: number) => {
+      if (index >= rows.length) {
+        this.pdfDownloading = false;
+        this.clearPdfSelection();
+        this.cdr.detectChanges();
+        return;
+      }
+      const row = rows[index];
+      const rowId = row.id;
+      const filename = String(row[type === 'invoices' ? 'invoiceNumber' : 'quoteNumber'] ?? `${type}-${rowId}`);
+      const apiBase = `http://${globalThis.location.hostname}:8085`;
+      this.http.get(`${apiBase}/api/v1/${type}/${rowId}/pdf`, {
+        headers: hdrs, responseType: 'blob'
+      }).subscribe({
+        next: (blob: Blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${filename}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          downloadNext(index + 1);
+        },
+        error: (err: any) => {
+          this.toast.addError('PDF Error', `Failed to generate PDF for ${filename}`);
+          this.pdfDownloading = false;
+          this.cdr.detectChanges();
+        }
+      });
+    };
+
+    downloadNext(0);
   }
 
   getBulkEditFields() {

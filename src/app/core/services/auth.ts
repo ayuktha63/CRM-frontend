@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, of, throwError, tap, catchError } from 'rxjs';
+import { Observable, tap } from 'rxjs';
+import { AppConfigService } from './app-config.service';
 
 interface LoginRequest {
   usernameOrEmail: string;
@@ -15,13 +16,16 @@ interface AuthResponse {
   username: string;
   email: string;
   role: string;
+  licenseWarning?: string | null;
+  tenantName?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly cfg  = inject(AppConfigService);
 
-  private readonly apiUrl = `http://${window.location.hostname}:8085/api/v1/auth`;
+  private get apiUrl(): string { return `${this.cfg.crmApiUrl}/api/v1/auth`; }
   private readonly accessTokenKey = 'accessToken';
   private readonly refreshTokenKey = 'refreshToken';
   private readonly userKey = 'crmUser';
@@ -33,9 +37,29 @@ export class AuthService {
   }
 
   private storeSession(r: AuthResponse): void {
+    // Wipe stale license state so the guard re-fetches fresh policy on next nav
+    localStorage.removeItem('licenseStatus');
+    localStorage.removeItem('accesspolicy');
+
     localStorage.setItem(this.accessTokenKey, r.accessToken);
     localStorage.setItem(this.refreshTokenKey, r.refreshToken);
-    localStorage.setItem(this.userKey, JSON.stringify({ name: r.username, email: r.email, role: r.role }));
+    localStorage.setItem(this.userKey, JSON.stringify({
+      name: r.username,
+      email: r.email,
+      role: r.role,
+      licenseWarning: r.licenseWarning ?? null,
+      tenantName: r.tenantName ?? null
+    }));
+  }
+
+  getLicenseWarning(): string | null {
+    const stored = localStorage.getItem(this.userKey);
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored).licenseWarning ?? null;
+    } catch {
+      return null;
+    }
   }
 
   getAccessToken(): string | null {
@@ -50,5 +74,7 @@ export class AuthService {
     localStorage.removeItem(this.accessTokenKey);
     localStorage.removeItem(this.refreshTokenKey);
     localStorage.removeItem(this.userKey);
+    localStorage.removeItem('accesspolicy');
+    localStorage.removeItem('licenseStatus');
   }
 }

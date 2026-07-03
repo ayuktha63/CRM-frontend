@@ -6,6 +6,9 @@ import { of, Subscription, interval } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../core/services/auth';
+import { OrganizationService } from '../core/services/organization.service';
+import { OAppSwitcherComponent, AppItem } from 'orque-ui';
+import { AppConfigService } from '../core/services/app-config.service';
 
 interface NavGroup {
   label: string;
@@ -22,7 +25,7 @@ interface NavItem {
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, OAppSwitcherComponent],
   templateUrl: './main-layout.html',
   styleUrls: ['./main-layout.scss']
 })
@@ -30,6 +33,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private auth = inject(AuthService);
   private sanitizer = inject(DomSanitizer);
+  private orgSvc = inject(OrganizationService);
+  private readonly cfgSvc = inject(AppConfigService);
 
   private http = inject(HttpClient);
   sidebarCollapsed = signal(localStorage.getItem('crm_sidebar_collapsed') === 'true');
@@ -46,7 +51,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   showNotifications = signal(false);
 
   private readonly destroySub = new Subscription();
-  private readonly base = `http://${globalThis.location.hostname}:8085`;
+  private get base(): string { return this.cfgSvc.crmApiUrl; }
 
   constructor() {
     const isDark = localStorage.getItem('crm_dark_mode') === 'true';
@@ -54,8 +59,39 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     this.applyTheme(isDark);
   }
 
+  allowedFeatures = signal<string[]>([]);
+  featuresLoaded  = signal(false);
+
   ngOnInit() {
     this.loadNotifications();
+
+    // Always fetch fresh policy from the license API — ensures features reflect the
+    // current master license even after a re-login without a page reload.
+    this.orgSvc.getMyLicenseStatus().subscribe({
+      next: status => {
+        const features = status?.features ?? [];
+        if (features.length > 0) {
+          localStorage.setItem('accesspolicy', JSON.stringify(features));
+          this.allowedFeatures.set(features);
+        } else {
+          // No features from API — fall back to cached policy (e.g. system admin)
+          const cached = localStorage.getItem('accesspolicy');
+          if (cached) {
+            try { this.allowedFeatures.set(JSON.parse(cached)); } catch { /* ignore */ }
+          }
+        }
+        this.featuresLoaded.set(true);
+      },
+      error: () => {
+        // API unavailable — use cached policy if present
+        const cached = localStorage.getItem('accesspolicy');
+        if (cached) {
+          try { this.allowedFeatures.set(JSON.parse(cached)); } catch { /* ignore */ }
+        }
+        this.featuresLoaded.set(true);
+      }
+    });
+
     // Poll notifications every 30 seconds
     this.destroySub.add(interval(30000).subscribe(() => {
       this.loadNotifications();
@@ -195,6 +231,16 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     } catch { return { name: 'Admin User', role: 'ADMIN' }; }
   });
 
+  /** Tenant name for the topbar badge.
+   *  Prefers the value stored by direct/SSO login; falls back to OPAC's localStorage
+   *  key so sessions that pre-date this change still show the badge without re-login. */
+  get currentTenantName(): string {
+    const fromCrmUser = this.currentUser()?.tenantName;
+    if (fromCrmUser) return fromCrmUser;
+    // Fallback: OPAC sets this key in the same browser origin
+    return localStorage.getItem('opac_tenant_name') || '';
+  }
+
   userRole = computed(() => {
     const u = this.currentUser();
     const role: string = u?.role || u?.roleName || '';
@@ -307,8 +353,43 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       });
     }
 
-    return base;
+    // While features are loading, show only the always-allowed routes
+    if (!this.featuresLoaded()) {
+      return base.map(group => ({
+        ...group,
+        items: group.items.filter(i => i.route === '/dashboard' || i.route === '/settings')
+      })).filter(g => g.items.length > 0);
+    }
+
+    const raw = this.allowedFeatures();
+    // Normalize paths: strip leading /crm/ prefix from legacy license keys
+    const features = raw.map(f => f.startsWith('/crm/') ? f.replace('/crm/', '/') : f);
+
+    // If no features at all (SYSTEM_ADMIN / platform owner) — show everything
+    if (features.length === 0) {
+      return base;
+    }
+
+    return base.map(group => {
+      const items = group.items.filter(item => {
+        if (item.route === '/dashboard' || item.route === '/settings') return true;
+        return features.includes(item.route);
+      });
+      return { ...group, items };
+    }).filter(group => group.items.length > 0);
   });
+
+  // ── App Switcher ─────────────────────────────────────────────────────────
+  get appSwitcherApps(): AppItem[] {
+    return [{
+      key: 'opac',
+      label: 'OPAC',
+      desc: 'Admin Center',
+      iconPath: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+      color: '#0f3460',
+      action: () => window.open(this.cfgSvc.opacAppUrl, '_blank')
+    }];
+  }
 
   toggleSidebar(): void {
     this.sidebarCollapsed.update(v => {

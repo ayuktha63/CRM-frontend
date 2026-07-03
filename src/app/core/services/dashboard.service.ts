@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -15,15 +15,34 @@ export interface DashboardSummaryResponse {
   emailsReplied: number;
 }
 
+export interface SalesUserOption {
+  username: string;
+  displayName: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class DashboardService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
-  private readonly apiUrl = `http://${window.location.hostname}:8085/api/v1/reports/dashboard`;
+  private readonly base = `http://${globalThis.location.hostname}:8085/api/v1/reports`;
 
-  getDashboardSummary(): Observable<DashboardSummaryResponse> {
-    return this.http.get<DashboardSummaryResponse>(this.apiUrl);
+  private hdrs(): HttpHeaders {
+    const token = localStorage.getItem('accessToken') ?? '';
+    return new HttpHeaders({ Authorization: `Bearer ${token}` });
+  }
+
+  getDashboardSummary(username?: string | null): Observable<DashboardSummaryResponse> {
+    const params = username ? `?username=${encodeURIComponent(username)}` : '';
+    return this.http.get<DashboardSummaryResponse>(`${this.base}/dashboard${params}`, {
+      headers: this.hdrs()
+    });
+  }
+
+  getSalesUsers(): Observable<SalesUserOption[]> {
+    return this.http.get<SalesUserOption[]>(`${this.base}/admin/users`, {
+      headers: this.hdrs()
+    });
   }
 }

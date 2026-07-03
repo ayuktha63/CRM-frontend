@@ -14,6 +14,24 @@
     </div>
     
     <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+
+      <!-- Admin User Picker — only visible to admins -->
+      @if (isAdmin() && salesUsers().length > 0) {
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label for="dash-user-picker" style="display:flex;align-items:center;gap:4px;font-size:0.78rem;font-weight:600;color:var(--crm-primary);white-space:nowrap;cursor:pointer;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            View as:
+          </label>
+          <select id="dash-user-picker" [ngModel]="selectedUsername()" (ngModelChange)="onUserPickerChange($event)"
+                  style="border: 1.5px solid var(--crm-primary); border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; background: var(--crm-card); color: var(--crm-primary); outline: none; cursor: pointer; font-weight: 600;">
+            <option value="">All Users (Combined)</option>
+            @for (u of salesUsers(); track u.username) {
+              <option [value]="u.username">{{ u.displayName?.trim() || u.username }}</option>
+            }
+          </select>
+        </div>
+      }
+
       <!-- Global Date Filter -->
       <select [value]="dateFilter()" (change)="onFilterChange($any($event.target).value)" style="border: 1px solid var(--crm-border); border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; background: var(--crm-card); color: var(--crm-text-1); outline: none; cursor: pointer;">
         <option value="all">All Time</option>

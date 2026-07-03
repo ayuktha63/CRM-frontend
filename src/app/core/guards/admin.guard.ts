@@ -14,7 +14,7 @@ export const adminGuard: CanActivateFn = () => {
     if (raw) {
       const user = JSON.parse(raw);
       const role: string = (user?.role || user?.roleName || '').toUpperCase();
-      if (role === 'ADMIN') {
+      if (role === 'ADMIN' || role === 'SYSTEM_ADMIN') {
         return true;
       }
     }

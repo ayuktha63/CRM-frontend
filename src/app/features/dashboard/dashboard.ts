@@ -1,10 +1,11 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { OStatCardComponent, PageStoreService } from 'orque-ui';
-import { DashboardService } from '../../core/services/dashboard.service';
+import { DashboardService, SalesUserOption } from '../../core/services/dashboard.service';
 
 interface KpiCard {
   label: string; value: string | number; sub: string;
@@ -33,22 +34,26 @@ interface QuickAction {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, OStatCardComponent],
+  imports: [CommonModule, FormsModule, RouterLink, OStatCardComponent],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.scss']
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   private readonly store = inject(PageStoreService);
   private readonly dashboardService = inject(DashboardService);
 
   loading = signal(true);
 
+  // Admin user-picker
+  salesUsers = signal<SalesUserOption[]>([]);
+  selectedUsername = signal<string>('');  // '' = combined (all users) for admin
+
   // Dashboard Polish properties
-  refreshIntervalRate = signal<number>(0); // 0 means Off
-  dateFilter = signal<string>('all'); // all, today, week, month
+  refreshIntervalRate = signal<number>(0);
+  dateFilter = signal<string>('all');
   isCustomizing = signal<boolean>(false);
   sharedWithLabel = signal<string>('Shared with: All Sales & Admins');
-  
+
   // Widget size settings
   widgetSizes = signal<Record<string, 'wide' | 'medium' | 'narrow'>>({
     pipeline: 'medium',
@@ -72,9 +77,21 @@ export class DashboardComponent implements OnInit {
     return role.toUpperCase();
   });
 
+  isAdmin = computed(() => {
+    const r = this.userRole();
+    return r === 'ADMIN' || r === 'SALES_ADMIN';
+  });
+
   isSalesUser = computed(() => {
     const r = this.userRole();
     return r === 'SALES' || r === 'SALES_USER';
+  });
+
+  selectedUserLabel = computed(() => {
+    const u = this.selectedUsername();
+    if (!u) return 'All Users (Combined)';
+    const found = this.salesUsers().find(x => x.username === u);
+    return found?.displayName?.trim() || u;
   });
 
   kpis         = signal<KpiCard[]>([]);
@@ -106,22 +123,33 @@ export class DashboardComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.loadDashboardData();
     this.loadWidgetSizes();
+    if (this.isAdmin()) {
+      this.dashboardService.getSalesUsers().pipe(catchError(() => of([]))).subscribe(users => {
+        this.salesUsers.set(users);
+      });
+    }
+    this.loadDashboardData();
   }
 
   ngOnDestroy(): void {
     this.clearRefreshTimer();
   }
 
+  onUserPickerChange(username: string): void {
+    this.selectedUsername.set(username);
+    this.loadDashboardData();
+  }
+
   loadDashboardData(): void {
     this.loading.set(true);
+    const scopeUsername = this.isAdmin() ? (this.selectedUsername() || null) : null;
     const fetchSessions = this.isSalesUser()
       ? of(null)
       : this.store.get('/api/v1/sessions/stats').pipe(catchError(() => of(null)));
 
     forkJoin({
-      summary:  this.dashboardService.getDashboardSummary().pipe(catchError(() => of(null))),
+      summary:  this.dashboardService.getDashboardSummary(scopeUsername).pipe(catchError(() => of(null))),
       deals:    this.store.getList('/api/v1/deals').pipe(catchError(() => of([]))),
       acts:     this.store.getList('/api/v1/activities').pipe(catchError(() => of([]))),
       sessions: fetchSessions,
