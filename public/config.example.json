@@ -1,0 +1,6 @@
+{
+  "crmApiUrl":  "https://crm.yourdomain.com",
+  "opacApiUrl": "https://opac.yourdomain.com",
+  "opacAppUrl": "https://opac.yourdomain.com",
+  "crmAppUrl":  "https://crm.yourdomain.com"
+}

@@ -47,3 +47,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Runtime config — env-specific, never commit
+public/config.json
+!public/config.example.json
