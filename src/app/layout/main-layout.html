@@ -148,9 +148,16 @@
         }
       </div>
 
+      <!-- Right-to-left order: App Switcher, User, Quick Add, Theme, Calendar/Notifications, Tenant name -->
       <div class="topbar-actions">
-        <!-- App Switcher -->
-        <o-app-switcher [apps]="appSwitcherApps"></o-app-switcher>
+        @if (currentTenantName) {
+          <div class="topbar-tenant-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span>{{ currentTenantName }}</span>
+          </div>
+        }
 
         <div style="position: relative;">
           <button class="topbar-btn" (click)="toggleNotifications()" title="Notifications">
@@ -227,15 +234,6 @@
           <span>Quick Add</span>
         </button>
 
-        @if (currentTenantName) {
-          <div class="topbar-tenant-badge">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
-            <span>{{ currentTenantName }}</span>
-          </div>
-        }
-
         <div class="topbar-user">
           <span class="topbar-avatar">{{ currentUser().name.charAt(0) }}</span>
           <div class="topbar-user-info">
@@ -243,6 +241,9 @@
             <span class="topbar-user-role">{{ currentUser().role }}</span>
           </div>
         </div>
+
+        <!-- App Switcher — right extreme -->
+        <o-app-switcher [apps]="appSwitcherApps"></o-app-switcher>
       </div>
     </header>
 
