@@ -31,10 +31,11 @@
   ],
   "tableTool": { "add": true, "edit": true, "refresh": true, "export": true, "import": true },
   "contextMenuActions": [
-    { "label": "Open",       "action": "navigate"   },
-    { "label": "Edit",       "action": "edit"       },
-    { "label": "Deactivate", "action": "deactivate" },
-    { "label": "Delete",     "action": "delete"     }
+    { "label": "Open",       "action": "navigate"                                        },
+    { "label": "Edit",       "action": "edit",       "showWhen": ["Active", "Prospect"]   },
+    { "label": "Deactivate", "action": "deactivate", "showWhen": ["Active", "Prospect"]   },
+    { "label": "Activate",   "action": "activate",   "showWhen": ["Inactive"]             },
+    { "label": "Delete",     "action": "delete"                                           }
   ],
   "steps": [
     {
