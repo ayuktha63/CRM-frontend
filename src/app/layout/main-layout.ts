@@ -260,28 +260,6 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     return localStorage.getItem('opac_tenant_name') || '';
   }
 
-  userRole = computed(() => {
-    const u = this.currentUser();
-    const role: string = u?.role || u?.roleName || '';
-    return role.toUpperCase();
-  });
-
-  // OPAC only ever syncs users in as SYSTEM_ADMIN or SALES_USER — ADMIN/SALES_ADMIN are
-  // CRM-native roles that nothing currently assigns, so gating on them alone hid the
-  // Insights/Platform/System nav groups from every user regardless of their actual
-  // license features. SYSTEM_ADMIN (the tenant's admin, holder of the master license)
-  // must count as admin-equivalent here.
-  canManageSystem = computed(() => {
-    const r = this.userRole();
-    return r === 'ADMIN' || r === 'SALES_ADMIN' || r === 'SYSTEM_ADMIN';
-  });
-
-  /** ADMIN and SYSTEM_ADMIN can access Customization and Dashboard Builder */
-  isAdmin = computed(() => {
-    const r = this.userRole();
-    return r === 'ADMIN' || r === 'SYSTEM_ADMIN';
-  });
-
   navGroups = computed<NavGroup[]>(() => {
     const base: NavGroup[] = [
       {
@@ -341,11 +319,9 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       },
     ];
 
-    // Insights/Platform/System items are gated by the feature filter below (i.e. by the
-    // user's actual license/activation), not by role — role only adds an *extra*
-    // restriction for the two admin-only tools (Dashboard Builder, Customization), since
-    // a SALES_USER can legitimately be individually activated for Reports/Analytics/Users/
-    // Active Sessions and must still see them.
+    // Every item below is gated purely by the feature filter further down (i.e. by
+    // whether it's actually in the user's accessPolicy) — no role-based override on
+    // top. If the license/activation grants it, it shows; if not, it doesn't.
     base.push({
       label: 'Insights',
       items: [
@@ -353,24 +329,20 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
           icon: `<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>` },
         { key: 'report-builder', label: 'Report Builder', route: '/report-builder',
           icon: `<path d="M9 17H5a2 2 0 0 0-2 2v3"/><path d="M15 17h4a2 2 0 0 1 2 2v3"/><path d="M12 2v10"/><polyline points="8 6 12 2 16 6"/>` },
-        // Dashboard Builder — ADMIN/SYSTEM_ADMIN only, even if the feature is granted
-        ...(this.isAdmin() ? [{ key: 'dashboard-builder', label: 'Dash Builder', route: '/dashboard-builder',
-          icon: `<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>` }] : []),
+        { key: 'dashboard-builder', label: 'Dash Builder', route: '/dashboard-builder',
+          icon: `<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>` },
         { key: 'analytics', label: 'Analytics', route: '/analytics',
           icon: `<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>` },
       ]
     });
 
-    // Platform (Customization) — ADMIN/SYSTEM_ADMIN only, even if the feature is granted
-    if (this.isAdmin()) {
-      base.push({
-        label: 'Platform',
-        items: [
-          { key: 'customization', label: 'Customization', route: '/customization',
-            icon: `<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>` },
-        ]
-      });
-    }
+    base.push({
+      label: 'Platform',
+      items: [
+        { key: 'customization', label: 'Customization', route: '/customization',
+          icon: `<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>` },
+      ]
+    });
 
     base.push({
       label: 'System',
