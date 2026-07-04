@@ -87,8 +87,7 @@
   "tableTool": {
     "add": true,
     "refresh": true,
-    "export": true,
-    "clear": true
+    "export": true
   },
   "contextMenuActions": [
     {
