@@ -146,7 +146,7 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/list-page/list-page').then(m => m.ListPageComponent),
         data: { resource: 'customization' },
-        canActivate: [authGuard, adminGuard]
+        canActivate: [authGuard]
       },
       {
         path: 'inventory',
@@ -159,7 +159,7 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/list-page/list-page').then(m => m.ListPageComponent),
         data: { resource: 'dashboard-builder' },
-        canActivate: [authGuard, adminGuard]
+        canActivate: [authGuard]
       },
       {
         path: 'settings',
