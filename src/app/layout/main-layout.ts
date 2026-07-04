@@ -2,7 +2,7 @@ import { Component, signal, computed, inject, HostListener, OnInit, OnDestroy } 
 import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { of, Subscription, interval } from 'rxjs';
+import { of, Subscription } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../core/services/auth';
@@ -51,6 +51,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   showNotifications = signal(false);
 
   private readonly destroySub = new Subscription();
+  private notificationStream: EventSource | null = null;
   private get base(): string { return this.cfgSvc.crmApiUrl; }
 
   constructor() {
@@ -92,14 +93,28 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Poll notifications every 30 seconds
-    this.destroySub.add(interval(30000).subscribe(() => {
-      this.loadNotifications();
-    }));
+    this.connectNotificationStream();
   }
 
   ngOnDestroy() {
     this.destroySub.unsubscribe();
+    this.notificationStream?.close();
+  }
+
+  /**
+   * Replaces the old interval(30000) poll — one persistent connection that the
+   * backend pushes to only when a notification actually changes, instead of the
+   * browser asking "anything new?" every 30 seconds regardless.
+   */
+  private connectNotificationStream(): void {
+    const token = localStorage.getItem('accessToken') ?? '';
+    if (!token) return;
+
+    this.notificationStream = new EventSource(`${this.base}/api/v1/notifications/stream?token=${encodeURIComponent(token)}`);
+    this.notificationStream.addEventListener('notification', () => {
+      this.loadNotifications();
+    });
+    // EventSource reconnects automatically on drop/error — no manual retry needed.
   }
 
   private hdrs(): HttpHeaders {

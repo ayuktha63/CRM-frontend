@@ -9,6 +9,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Opens the TLS connection to the API origin while the JS bundle is still
+       parsing, instead of only starting after the first API call fires.
+       Substituted at container start (see docker/entrypoint.sh) since the API
+       domain differs per environment. -->
+  <link rel="preconnect" href="__CRM_API_URL__" crossorigin>
 </head>
 <body>
   <app-root></app-root>
