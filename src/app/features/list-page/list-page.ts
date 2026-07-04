@@ -1185,11 +1185,13 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
 
   getBulkStatuses() {
     if (this.resource === 'leads') {
+      // Must match com.orque.crm.enums.LeadStatus exactly — bulk-status posts this value
+      // straight to LeadStatus.valueOf(), so anything else 400s.
       return [
-        { label: 'New', value: 'NEW' },
-        { label: 'Contacted', value: 'CONTACTED' },
-        { label: 'Qualified', value: 'QUALIFIED' },
-        { label: 'Unqualified', value: 'UNQUALIFIED' }
+        { label: 'New',          value: 'NEW' },
+        { label: 'Qualified',    value: 'QUALIFIED' },
+        { label: 'Converted',    value: 'CONVERTED' },
+        { label: 'Disqualified', value: 'DISQUALIFIED' }
       ];
     }
     if (this.resource === 'deals') {
@@ -1204,7 +1206,8 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
     }
     if (this.resource === 'accounts') {
       return [
-        { label: 'Active', value: 'Active' },
+        { label: 'Active',   value: 'Active' },
+        { label: 'Prospect', value: 'Prospect' },
         { label: 'Inactive', value: 'Inactive' }
       ];
     }
