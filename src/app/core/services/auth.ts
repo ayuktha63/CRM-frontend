@@ -88,6 +88,16 @@ export class AuthService {
     }
   }
 
+  getRole(): string | null {
+    const stored = localStorage.getItem(this.userKey);
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored).role ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   isLoggedIn(): boolean {
     return !!this.getAccessToken();
   }

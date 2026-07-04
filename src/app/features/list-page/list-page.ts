@@ -115,7 +115,7 @@ import { AuthService } from '../../core/services/auth';
       @else if (page && !error) {
         <div class="lp-workspace-wrapper" style="position: relative; padding-bottom: 80px;">
           @if (viewMode === 'table') {
-              <o-page-renderer [page]="page" [data]="data" (actionTriggered)="handleAction($event)" (selectionChange)="onSelectionChanged($event)"></o-page-renderer>
+              <o-page-renderer [page]="page" [data]="data" [userRole]="auth.getRole() || ''" (actionTriggered)="handleAction($event)" (selectionChange)="onSelectionChanged($event)"></o-page-renderer>
           } @else {
             <app-kanban [resource]="resource" [data]="data" (action)="handleAction($event)"></app-kanban>
           }
@@ -520,7 +520,7 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
   pdfDownloading = false;
   private readonly http = inject(HttpClient);
   private readonly cfg = inject(AppConfigService);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
   private get base(): string { return this.cfg.crmApiUrl; }
 
   // Bulk operations states
