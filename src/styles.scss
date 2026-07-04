@@ -310,12 +310,6 @@ body.dark-theme {
   z-index: 50 !important;
 }
 
-// Force dots context menu to open towards the right
-.o-dots-action__menu {
-  left: 0 !important;
-  right: auto !important;
-}
-
 // Reset & Base
 *, *::before, *::after { box-sizing: border-box; }
 
