@@ -161,12 +161,14 @@ import { AuthService } from '../../core/services/auth';
             </div>
           </div>
 
-          <!-- Floating Bottom Bar for Bulk operations -->
-          <div class="pdf-floating-bar" [style.left]="sidebarOffset" *ngIf="selectedBulkRows.length > 0 && resource !== 'quotes' && resource !== 'invoices'">
+          <!-- Floating Bottom Bar for Bulk operations — only meaningful for actual
+               multi-record bulk actions, so it stays hidden entirely for a single
+               selection (use the row's own context menu / Edit for that). -->
+          <div class="pdf-floating-bar" [style.left]="sidebarOffset" *ngIf="selectedBulkRows.length > 1 && resource !== 'quotes' && resource !== 'invoices'">
             <div class="pdf-bar-left">
               <button class="pdf-bar-close-btn" (click)="clearBulkSelection()">Cancel</button>
               <span class="pdf-bar-row-info">
-                <strong>Selected {{ selectedBulkRows.length }} {{ resource }}:</strong> 
+                <strong>Selected {{ selectedBulkRows.length }} {{ resource }}:</strong>
               </span>
             </div>
             <div class="pdf-bar-right">
