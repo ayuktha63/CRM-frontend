@@ -79,7 +79,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   isAdmin = computed(() => {
     const r = this.userRole();
-    return r === 'ADMIN' || r === 'SALES_ADMIN';
+    return r === 'ADMIN' || r === 'SALES_ADMIN' || r === 'SYSTEM_ADMIN';
   });
 
   isSalesUser = computed(() => {
