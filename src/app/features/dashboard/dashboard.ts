@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { OStatCardComponent, PageStoreService } from 'orque-ui';
@@ -41,8 +41,10 @@ interface QuickAction {
 export class DashboardComponent implements OnInit, OnDestroy {
   private readonly store = inject(PageStoreService);
   private readonly dashboardService = inject(DashboardService);
+  private readonly router = inject(Router);
 
   loading = signal(true);
+  dashboards = signal<any[]>([]);
 
   // Admin user-picker
   salesUsers = signal<SalesUserOption[]>([]);
@@ -130,10 +132,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
     }
     this.loadDashboardData();
+    this.loadCustomDashboards();
   }
 
   ngOnDestroy(): void {
     this.clearRefreshTimer();
+  }
+
+  loadCustomDashboards() {
+    this.store.get('/api/v1/crm-dashboards')
+      .pipe(catchError(() => of([])))
+      .subscribe((list: any) => {
+        this.dashboards.set(list || []);
+      });
+  }
+
+  onDashboardSwitch(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const value = target.value;
+    if (value === 'default') {
+      return;
+    }
+    const dashboardId = Number(value);
+    localStorage.setItem('crm_last_dashboard_id', String(dashboardId));
+    this.router.navigate(['/dashboard-builder']);
   }
 
   onUserPickerChange(username: string): void {

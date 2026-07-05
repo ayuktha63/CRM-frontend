@@ -32,6 +32,16 @@
         </div>
       }
 
+      <!-- Dashboard Switcher -->
+      @if (dashboards().length > 0) {
+        <select (change)="onDashboardSwitch($event)" style="border: 1px solid var(--crm-border); border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; background: var(--crm-card); color: var(--crm-text-1); outline: none; cursor: pointer;">
+          <option value="default">Default Dashboard</option>
+          @for (d of dashboards(); track d.id) {
+            <option [value]="d.id">{{ d.name }}</option>
+          }
+        </select>
+      }
+
       <!-- Global Date Filter -->
       <select [value]="dateFilter()" (change)="onFilterChange($any($event.target).value)" style="border: 1px solid var(--crm-border); border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; background: var(--crm-card); color: var(--crm-text-1); outline: none; cursor: pointer;">
         <option value="all">All Time</option>
