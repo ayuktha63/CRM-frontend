@@ -269,15 +269,6 @@ interface TaxCountry {
           </div>
           }
 
-          @if (taxForm.countryCode) {
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>{{ selectedCountry()?.registrationLabel || 'Registration Number' }}</span>
-              <span class="setting-desc">Tax registration number, printed on Invoice PDFs</span>
-            </div>
-            <input class="setting-input" type="text" [(ngModel)]="taxForm.registrationNumber" placeholder="e.g. 32ABCDE1234A1Z5" />
-          </div>
-          }
         </div>
 
         <div class="section-actions">
