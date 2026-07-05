@@ -808,7 +808,8 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
       }
 
       case 'activate':
-      case 'deactivate': {
+      case 'deactivate':
+      case 'launch': {
         const sub = this.store.post(`${base}/${uuid}/${event.action}`, {}).subscribe({
           next: () => {
             this.toast.addSuccess('Done', `${label}: ${event.action} completed.`);

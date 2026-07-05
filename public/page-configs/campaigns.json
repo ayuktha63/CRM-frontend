@@ -31,8 +31,7 @@
   "contextMenuActions": [
     { "label": "View",   "action": "view"       },
     { "label": "Edit",   "action": "edit"       },
-    { "label": "Pause",  "action": "deactivate","showWhen": ["Active"]        },
-    { "label": "Resume", "action": "activate",  "showWhen": ["Draft","Paused"] },
+    { "label": "Launch", "action": "launch",    "showWhen": ["DRAFT"] },
     { "label": "Delete", "action": "delete"     }
   ],
   "steps": [
