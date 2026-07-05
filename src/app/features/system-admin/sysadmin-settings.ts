@@ -22,437 +22,453 @@ interface TaxCountry {
   imports: [CommonModule, FormsModule],
   template: `
     <div class="settings-page">
-      <div class="page-header">
+      <div class="settings-header">
         <h1>Settings</h1>
-        <p class="subtitle">CRM configuration and license information</p>
+        <p>CRM configuration, license, billing and tax information for your organization</p>
       </div>
 
-      <!-- ── License Info (read-only, auto-loaded) ── -->
-      <section class="settings-section">
-        <div class="section-header">
-          <div class="section-icon license-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <div class="settings-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="settings-sidebar">
+          <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'license'" (click)="setSection('license')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
-          </div>
-          <div>
-            <h2>License Information</h2>
-            <p>Your organization's active CRM license details</p>
-          </div>
-          @if (licenseLoading()) {
-            <span class="loading-chip">Loading…</span>
-          } @else {
-            <span class="status-chip" [class.chip-active]="license()?.status === 'ACTIVE' || license()?.status === 'GRACE'"
-                                      [class.chip-expired]="license()?.status === 'EXPIRED'">
-              {{ license()?.status ?? 'Unknown' }}
-            </span>
-          }
-        </div>
-
-        @if (licenseError()) {
-          <div class="info-banner info-warn">{{ licenseError() }}</div>
-        }
-
-        @if (license()) {
-          <div class="info-grid">
-            <div class="info-field">
-              <span class="info-label">Organization</span>
-              <span class="info-value">{{ license()?.organizationName ?? '—' }}</span>
-            </div>
-            <div class="info-field">
-              <span class="info-label">License Name</span>
-              <span class="info-value">{{ license()?.licenseName ?? '—' }}</span>
-            </div>
-            <div class="info-field">
-              <span class="info-label">Expires</span>
-              <span class="info-value">{{ formatDate(license()?.endDate) }}</span>
-            </div>
-            <div class="info-field">
-              <span class="info-label">Days Remaining</span>
-              <span class="info-value" [class.warn-text]="(license()?.daysRemaining ?? 0) < 30">
-                {{ license()?.daysRemaining ?? '—' }}
-              </span>
-            </div>
-            <div class="info-field">
-              <span class="info-label">Max Users</span>
-              <span class="info-value">{{ license()?.maximumUsers ?? '—' }}</span>
-            </div>
-            <div class="info-field">
-              <span class="info-label">Concurrent Limit</span>
-              <span class="info-value">{{ license()?.concurrentUsers ?? '—' }}</span>
-            </div>
-            @if (license()?.inGracePeriod) {
-              <div class="info-field">
-                <span class="info-label">Grace Days Left</span>
-                <span class="info-value warn-text">{{ license()?.graceRemaining }}</span>
-              </div>
-            }
-          </div>
-
-          @if (license()?.features?.length) {
-            <div class="features-section">
-              <span class="info-label">Allowed Modules</span>
-              <div class="feature-tags">
-                @for (f of license()!.features; track f) {
-                  <span class="feature-tag">{{ f }}</span>
-                }
-              </div>
-            </div>
-          }
-        }
-      </section>
-
-      <!-- ── Company / Billing Details (printed on Quote & Invoice PDFs) ── -->
-      <section class="settings-section">
-        <div class="section-header">
-          <div class="section-icon billing-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            License Information
+          </button>
+          <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'billing'" (click)="setSection('billing')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9h20"/>
             </svg>
-          </div>
-          <div>
-            <h2>Company &amp; Billing Details</h2>
-            <p>Shown as "Billed From" and payment details on this tenant's Quote &amp; Invoice PDFs</p>
-          </div>
-        </div>
-
-        @if (billingLoading()) {
-          <span class="loading-chip">Loading…</span>
-        } @else {
-
-        @if (billingError()) {
-          <div class="info-banner info-warn">{{ billingError() }}</div>
-        }
-
-        <div class="settings-row">
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Company / Legal Name</span>
-              <span class="setting-desc">Printed as the billed-from company name</span>
-            </div>
-            <input class="setting-input" type="text" [(ngModel)]="billingForm.legalName" placeholder="e.g. Acme Solutions Pvt. Ltd." />
-          </div>
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Company Tagline</span>
-              <span class="setting-desc">Short line under the company name</span>
-            </div>
-            <input class="setting-input" type="text" [(ngModel)]="billingForm.companyTagline" placeholder="e.g. Enterprise Solutions" />
-          </div>
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Company Email</span>
-              <span class="setting-desc">Contact email shown on documents</span>
-            </div>
-            <input class="setting-input" type="email" [(ngModel)]="billingForm.email" placeholder="e.g. contact@yourcompany.com" />
-          </div>
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Company Phone</span>
-              <span class="setting-desc">Optional contact number</span>
-            </div>
-            <input class="setting-input" type="text" [(ngModel)]="billingForm.phone" placeholder="e.g. +91 98765 43210" />
-          </div>
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Company Address</span>
-              <span class="setting-desc">Registered / billing address</span>
-            </div>
-            <input class="setting-input" type="text" [(ngModel)]="billingForm.address" placeholder="e.g. 4th Floor, Tech Park, Bengaluru" />
-          </div>
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>GSTIN</span>
-              <span class="setting-desc">Printed on Invoice PDFs</span>
-            </div>
-            <input class="setting-input" type="text" [(ngModel)]="billingForm.gstin" placeholder="e.g. 27XXXXX1234X1Z5" />
-          </div>
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Bank Name</span>
-              <span class="setting-desc">Shown in Invoice payment details</span>
-            </div>
-            <input class="setting-input" type="text" [(ngModel)]="billingForm.bankName" placeholder="e.g. HDFC Bank" />
-          </div>
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Bank Account Number</span>
-              <span class="setting-desc">Account to receive payment</span>
-            </div>
-            <input class="setting-input" type="text" [(ngModel)]="billingForm.bankAccountNumber" placeholder="e.g. 5020XXXXXXXXXX" />
-          </div>
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Bank IFSC</span>
-              <span class="setting-desc">IFSC code for the account above</span>
-            </div>
-            <input class="setting-input" type="text" [(ngModel)]="billingForm.bankIfsc" placeholder="e.g. HDFC0001234" />
-          </div>
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>UPI ID</span>
-              <span class="setting-desc">Optional UPI payment address</span>
-            </div>
-            <input class="setting-input" type="text" [(ngModel)]="billingForm.upiId" placeholder="e.g. pay@yourcompany" />
-          </div>
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Payment Terms (days)</span>
-              <span class="setting-desc">Shown as "Net X days" on documents</span>
-            </div>
-            <input class="setting-input" type="number" min="0" [(ngModel)]="billingForm.paymentTermsDays" placeholder="e.g. 30" />
-          </div>
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Late Fee Policy</span>
-              <span class="setting-desc">Shown on Invoice PDFs</span>
-            </div>
-            <input class="setting-input" type="text" [(ngModel)]="billingForm.lateFeeText" placeholder="e.g. 1.5% per month overdue" />
-          </div>
-        </div>
-
-        <div class="section-actions">
-          <button class="btn-save" (click)="saveBillingProfile()" [disabled]="billingSaving()">
-            {{ billingSaving() ? 'Saving…' : 'Save Billing Details' }}
+            Company &amp; Billing
           </button>
-          @if (billingSaveSuccess()) {
-            <span class="save-success">✓ Saved</span>
-          }
-        </div>
-
-        }
-      </section>
-
-      <!-- ── Tax Configuration ── -->
-      <section class="settings-section">
-        <div class="section-header">
-          <div class="section-icon tax-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'tax'" (click)="setSection('tax')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
             </svg>
-          </div>
-          <div>
-            <h2>Tax Configuration</h2>
-            <p>Sets the country/tax system this tenant uses — every Quote, Invoice, Sales Order and report switches automatically</p>
-          </div>
-        </div>
-
-        @if (taxLoading()) {
-          <span class="loading-chip">Loading…</span>
-        } @else {
-
-        @if (taxError()) {
-          <div class="info-banner info-warn">{{ taxError() }}</div>
-        }
-
-        <div class="settings-row">
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Country</span>
-              <span class="setting-desc">Determines the tax system (GST, VAT, ...) and its rules</span>
-            </div>
-            <select class="setting-select" [ngModel]="taxForm.countryCode" (ngModelChange)="onCountryChange($event)">
-              <option value="" disabled>Select a country…</option>
-              @for (c of taxCountries(); track c.countryCode) {
-                <option [value]="c.countryCode">{{ c.countryName }} ({{ c.taxSystem }})</option>
-              }
-            </select>
-          </div>
-
-          @if (selectedCountry()?.requiresBusinessState) {
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Business State</span>
-              <span class="setting-desc">Your own registered state — compared against each customer's state to decide CGST/SGST vs IGST</span>
-            </div>
-            <input class="setting-input" type="text" [(ngModel)]="taxForm.businessState" placeholder="e.g. Kerala" />
-          </div>
-          }
-
-        </div>
-
-        <div class="section-actions">
-          <button class="btn-save" (click)="saveTaxSettings()" [disabled]="taxSaving() || !taxForm.countryCode">
-            {{ taxSaving() ? 'Saving…' : 'Save Tax Settings' }}
+            Tax Configuration
           </button>
-          @if (taxSaveSuccess()) {
-            <span class="save-success">✓ Saved — entire CRM now uses {{ selectedCountry()?.taxSystem }}</span>
-          }
-        </div>
-
-        }
-      </section>
-
-      <!-- ── General CRM Settings ── -->
-      <section class="settings-section">
-        <div class="section-header">
-          <div class="section-icon general-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'general'" (click)="setSection('general')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
-          </div>
-          <div>
-            <h2>General Settings</h2>
-            <p>Application-wide preferences</p>
-          </div>
-        </div>
-
-        <div class="settings-row">
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Default Currency</span>
-              <span class="setting-desc">Used across quotes, invoices and deals</span>
-            </div>
-            <select class="setting-select" [(ngModel)]="prefs.currency">
-              <option value="INR">INR — Indian Rupee</option>
-              <option value="USD">USD — US Dollar</option>
-              <option value="EUR">EUR — Euro</option>
-              <option value="GBP">GBP — British Pound</option>
-            </select>
-          </div>
-
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Date Format</span>
-              <span class="setting-desc">How dates are displayed throughout CRM</span>
-            </div>
-            <select class="setting-select" [(ngModel)]="prefs.dateFormat">
-              <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-              <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-              <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-            </select>
-          </div>
-
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Timezone</span>
-              <span class="setting-desc">Organization's primary timezone</span>
-            </div>
-            <select class="setting-select" [(ngModel)]="prefs.timezone">
-              <option value="Asia/Kolkata">Asia/Kolkata (IST +5:30)</option>
-              <option value="UTC">UTC</option>
-              <option value="America/New_York">America/New_York (EST)</option>
-              <option value="Europe/London">Europe/London (GMT)</option>
-            </select>
-          </div>
-
-          <div class="setting-item">
-            <div class="setting-label">
-              <span>Records Per Page</span>
-              <span class="setting-desc">Default number of rows in list views</span>
-            </div>
-            <select class="setting-select" [(ngModel)]="prefs.pageSize">
-              <option value="10">10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="section-actions">
-          <button class="btn-save" (click)="savePrefs()" [disabled]="saving()">
-            {{ saving() ? 'Saving…' : 'Save Settings' }}
+            General Settings
           </button>
-          @if (saveSuccess()) {
-            <span class="save-success">✓ Saved</span>
-          }
-        </div>
-      </section>
-
-      <!-- ── Notifications ── -->
-      <section class="settings-section">
-        <div class="section-header">
-          <div class="section-icon notif-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'notifications'" (click)="setSection('notifications')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
-          </div>
-          <div>
-            <h2>Notification Preferences</h2>
-            <p>Control what alerts you receive</p>
-          </div>
-        </div>
+            Notifications
+          </button>
+        </aside>
 
-        <div class="toggle-list">
-          <div class="toggle-item">
-            <div class="toggle-label">
-              <span>New Lead Assigned</span>
-              <span class="setting-desc">Alert when a lead is assigned to you</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" [(ngModel)]="prefs.notifLeads">
-              <span class="toggle-track"></span>
-            </label>
-          </div>
-          <div class="toggle-item">
-            <div class="toggle-label">
-              <span>Deal Stage Changed</span>
-              <span class="setting-desc">Alert when a deal you own moves stage</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" [(ngModel)]="prefs.notifDeals">
-              <span class="toggle-track"></span>
-            </label>
-          </div>
-          <div class="toggle-item">
-            <div class="toggle-label">
-              <span>Task Due Reminder</span>
-              <span class="setting-desc">Remind 24h before a task is due</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" [(ngModel)]="prefs.notifTasks">
-              <span class="toggle-track"></span>
-            </label>
-          </div>
-          <div class="toggle-item">
-            <div class="toggle-label">
-              <span>License Expiry Warning</span>
-              <span class="setting-desc">Alert 30 days before license expires</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" [(ngModel)]="prefs.notifLicense">
-              <span class="toggle-track"></span>
-            </label>
-          </div>
-        </div>
-      </section>
+        <!-- Content Panel -->
+        <main class="settings-content">
 
+          <!-- ── License Info (read-only, auto-loaded) ── -->
+          @if (activeSection() === 'license') {
+          <div class="settings-card">
+            <h2 class="settings-section-title">License Information</h2>
+            <p class="settings-section-desc">Your organization's active CRM license details</p>
+
+            @if (licenseLoading()) {
+              <span class="loading-chip">Loading…</span>
+            } @else {
+              <span class="status-chip" [class.chip-active]="license()?.status === 'ACTIVE' || license()?.status === 'GRACE'"
+                                        [class.chip-expired]="license()?.status === 'EXPIRED'">
+                {{ license()?.status ?? 'Unknown' }}
+              </span>
+            }
+
+            @if (licenseError()) {
+              <div class="info-banner info-warn">{{ licenseError() }}</div>
+            }
+
+            @if (license()) {
+              <div class="info-grid">
+                <div class="info-field">
+                  <span class="info-label">Organization</span>
+                  <span class="info-value">{{ license()?.organizationName ?? '—' }}</span>
+                </div>
+                <div class="info-field">
+                  <span class="info-label">License Name</span>
+                  <span class="info-value">{{ license()?.licenseName ?? '—' }}</span>
+                </div>
+                <div class="info-field">
+                  <span class="info-label">Expires</span>
+                  <span class="info-value">{{ formatDate(license()?.endDate) }}</span>
+                </div>
+                <div class="info-field">
+                  <span class="info-label">Days Remaining</span>
+                  <span class="info-value" [class.warn-text]="(license()?.daysRemaining ?? 0) < 30">
+                    {{ license()?.daysRemaining ?? '—' }}
+                  </span>
+                </div>
+                <div class="info-field">
+                  <span class="info-label">Max Users</span>
+                  <span class="info-value">{{ license()?.maximumUsers ?? '—' }}</span>
+                </div>
+                <div class="info-field">
+                  <span class="info-label">Concurrent Limit</span>
+                  <span class="info-value">{{ license()?.concurrentUsers ?? '—' }}</span>
+                </div>
+                @if (license()?.inGracePeriod) {
+                  <div class="info-field">
+                    <span class="info-label">Grace Days Left</span>
+                    <span class="info-value warn-text">{{ license()?.graceRemaining }}</span>
+                  </div>
+                }
+              </div>
+
+              @if (license()?.features?.length) {
+                <div class="features-section">
+                  <span class="info-label">Allowed Modules</span>
+                  <div class="feature-tags">
+                    @for (f of license()!.features; track f) {
+                      <span class="feature-tag">{{ f }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            }
+          </div>
+          }
+
+          <!-- ── Company / Billing Details (printed on Quote & Invoice PDFs) ── -->
+          @if (activeSection() === 'billing') {
+          <div class="settings-card">
+            <h2 class="settings-section-title">Company &amp; Billing Details</h2>
+            <p class="settings-section-desc">Shown as "Billed From" and payment details on this tenant's Quote &amp; Invoice PDFs</p>
+
+            @if (billingLoading()) {
+              <span class="loading-chip">Loading…</span>
+            } @else {
+
+            @if (billingError()) {
+              <div class="info-banner info-warn">{{ billingError() }}</div>
+            }
+
+            <div class="settings-row">
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Company / Legal Name</span>
+                  <span class="setting-desc">Printed as the billed-from company name</span>
+                </div>
+                <input class="setting-input" type="text" [(ngModel)]="billingForm.legalName" placeholder="e.g. Acme Solutions Pvt. Ltd." />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Company Tagline</span>
+                  <span class="setting-desc">Short line under the company name</span>
+                </div>
+                <input class="setting-input" type="text" [(ngModel)]="billingForm.companyTagline" placeholder="e.g. Enterprise Solutions" />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Company Email</span>
+                  <span class="setting-desc">Contact email shown on documents</span>
+                </div>
+                <input class="setting-input" type="email" [(ngModel)]="billingForm.email" placeholder="e.g. contact@yourcompany.com" />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Company Phone</span>
+                  <span class="setting-desc">Optional contact number</span>
+                </div>
+                <input class="setting-input" type="text" [(ngModel)]="billingForm.phone" placeholder="e.g. +91 98765 43210" />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Company Address</span>
+                  <span class="setting-desc">Registered / billing address</span>
+                </div>
+                <input class="setting-input" type="text" [(ngModel)]="billingForm.address" placeholder="e.g. 4th Floor, Tech Park, Bengaluru" />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>GSTIN</span>
+                  <span class="setting-desc">Printed on Invoice PDFs</span>
+                </div>
+                <input class="setting-input" type="text" [(ngModel)]="billingForm.gstin" placeholder="e.g. 27XXXXX1234X1Z5" />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Bank Name</span>
+                  <span class="setting-desc">Shown in Invoice payment details</span>
+                </div>
+                <input class="setting-input" type="text" [(ngModel)]="billingForm.bankName" placeholder="e.g. HDFC Bank" />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Bank Account Number</span>
+                  <span class="setting-desc">Account to receive payment</span>
+                </div>
+                <input class="setting-input" type="text" [(ngModel)]="billingForm.bankAccountNumber" placeholder="e.g. 5020XXXXXXXXXX" />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Bank IFSC</span>
+                  <span class="setting-desc">IFSC code for the account above</span>
+                </div>
+                <input class="setting-input" type="text" [(ngModel)]="billingForm.bankIfsc" placeholder="e.g. HDFC0001234" />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>UPI ID</span>
+                  <span class="setting-desc">Optional UPI payment address</span>
+                </div>
+                <input class="setting-input" type="text" [(ngModel)]="billingForm.upiId" placeholder="e.g. pay@yourcompany" />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Payment Terms (days)</span>
+                  <span class="setting-desc">Shown as "Net X days" on documents</span>
+                </div>
+                <input class="setting-input" type="number" min="0" [(ngModel)]="billingForm.paymentTermsDays" placeholder="e.g. 30" />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Late Fee Policy</span>
+                  <span class="setting-desc">Shown on Invoice PDFs</span>
+                </div>
+                <input class="setting-input" type="text" [(ngModel)]="billingForm.lateFeeText" placeholder="e.g. 1.5% per month overdue" />
+              </div>
+            </div>
+
+            <div class="section-actions">
+              <button class="btn-save" (click)="saveBillingProfile()" [disabled]="billingSaving()">
+                {{ billingSaving() ? 'Saving…' : 'Save Billing Details' }}
+              </button>
+              @if (billingSaveSuccess()) {
+                <span class="save-success">✓ Saved</span>
+              }
+            </div>
+
+            }
+          </div>
+          }
+
+          <!-- ── Tax Configuration ── -->
+          @if (activeSection() === 'tax') {
+          <div class="settings-card">
+            <h2 class="settings-section-title">Tax Configuration</h2>
+            <p class="settings-section-desc">Sets the country/tax system this tenant uses — every Quote, Invoice, Sales Order and report switches automatically</p>
+
+            @if (taxLoading()) {
+              <span class="loading-chip">Loading…</span>
+            } @else {
+
+            @if (taxError()) {
+              <div class="info-banner info-warn">{{ taxError() }}</div>
+            }
+
+            <div class="settings-row">
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Country</span>
+                  <span class="setting-desc">Determines the tax system (GST, VAT, ...) and its rules</span>
+                </div>
+                <select class="setting-select" [ngModel]="taxForm.countryCode" (ngModelChange)="onCountryChange($event)">
+                  <option value="" disabled>Select a country…</option>
+                  @for (c of taxCountries(); track c.countryCode) {
+                    <option [value]="c.countryCode">{{ c.countryName }} ({{ c.taxSystem }})</option>
+                  }
+                </select>
+              </div>
+
+              @if (selectedCountry()?.requiresBusinessState) {
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Business State</span>
+                  <span class="setting-desc">Your own registered state — compared against each customer's state to decide CGST/SGST vs IGST</span>
+                </div>
+                <input class="setting-input" type="text" [(ngModel)]="taxForm.businessState" placeholder="e.g. Kerala" />
+              </div>
+              }
+            </div>
+
+            <div class="section-actions">
+              <button class="btn-save" (click)="saveTaxSettings()" [disabled]="taxSaving() || !taxForm.countryCode">
+                {{ taxSaving() ? 'Saving…' : 'Save Tax Settings' }}
+              </button>
+              @if (taxSaveSuccess()) {
+                <span class="save-success">✓ Saved — entire CRM now uses {{ selectedCountry()?.taxSystem }}</span>
+              }
+            </div>
+
+            }
+          </div>
+          }
+
+          <!-- ── General CRM Settings ── -->
+          @if (activeSection() === 'general') {
+          <div class="settings-card">
+            <h2 class="settings-section-title">General Settings</h2>
+            <p class="settings-section-desc">Application-wide preferences</p>
+
+            <div class="settings-row">
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Default Currency</span>
+                  <span class="setting-desc">Used across quotes, invoices and deals</span>
+                </div>
+                <select class="setting-select" [(ngModel)]="prefs.currency">
+                  <option value="INR">INR — Indian Rupee</option>
+                  <option value="USD">USD — US Dollar</option>
+                  <option value="EUR">EUR — Euro</option>
+                  <option value="GBP">GBP — British Pound</option>
+                </select>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Date Format</span>
+                  <span class="setting-desc">How dates are displayed throughout CRM</span>
+                </div>
+                <select class="setting-select" [(ngModel)]="prefs.dateFormat">
+                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                </select>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Timezone</span>
+                  <span class="setting-desc">Organization's primary timezone</span>
+                </div>
+                <select class="setting-select" [(ngModel)]="prefs.timezone">
+                  <option value="Asia/Kolkata">Asia/Kolkata (IST +5:30)</option>
+                  <option value="UTC">UTC</option>
+                  <option value="America/New_York">America/New_York (EST)</option>
+                  <option value="Europe/London">Europe/London (GMT)</option>
+                </select>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Records Per Page</span>
+                  <span class="setting-desc">Default number of rows in list views</span>
+                </div>
+                <select class="setting-select" [(ngModel)]="prefs.pageSize">
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="section-actions">
+              <button class="btn-save" (click)="savePrefs()" [disabled]="saving()">
+                {{ saving() ? 'Saving…' : 'Save Settings' }}
+              </button>
+              @if (saveSuccess()) {
+                <span class="save-success">✓ Saved</span>
+              }
+            </div>
+          </div>
+          }
+
+          <!-- ── Notifications ── -->
+          @if (activeSection() === 'notifications') {
+          <div class="settings-card">
+            <h2 class="settings-section-title">Notification Preferences</h2>
+            <p class="settings-section-desc">Control what alerts you receive</p>
+
+            <div class="toggle-list">
+              <div class="toggle-item">
+                <div class="toggle-label">
+                  <span>New Lead Assigned</span>
+                  <span class="setting-desc">Alert when a lead is assigned to you</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="prefs.notifLeads">
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <div class="toggle-label">
+                  <span>Deal Stage Changed</span>
+                  <span class="setting-desc">Alert when a deal you own moves stage</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="prefs.notifDeals">
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <div class="toggle-label">
+                  <span>Task Due Reminder</span>
+                  <span class="setting-desc">Remind 24h before a task is due</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="prefs.notifTasks">
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <div class="toggle-label">
+                  <span>License Expiry Warning</span>
+                  <span class="setting-desc">Alert 30 days before license expires</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="prefs.notifLicense">
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+          }
+
+        </main>
+      </div>
     </div>
   `,
   styles: [`
-    .settings-page { padding: 24px; max-width: 860px; margin: 0 auto; }
-    .page-header { margin-bottom: 28px; }
-    .page-header h1 { font-size: 22px; font-weight: 700; margin: 0; color: #111827; }
-    .subtitle { color: #6b7280; font-size: 14px; margin: 4px 0 0; }
+    .settings-page {
+      padding: 24px;
+      background: var(--crm-bg, #f8fafc);
+      min-height: calc(100vh - 60px);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .settings-header h1 { margin: 0; font-size: 1.5rem; font-weight: 700; color: #111827; }
+    .settings-header p { margin: 4px 0 0; font-size: 0.88rem; color: #6b7280; }
 
-    .settings-section {
+    .settings-layout { display: flex; gap: 24px; flex: 1; }
+    @media (max-width: 768px) { .settings-layout { flex-direction: column; } }
+
+    .settings-sidebar { width: 260px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+    @media (max-width: 768px) {
+      .settings-sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding-bottom: 8px; }
+    }
+
+    .settings-nav-btn {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px;
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+      color: #4b5563; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s ease; text-align: left;
+    }
+    .settings-nav-btn svg { stroke: currentColor; flex-shrink: 0; }
+    .settings-nav-btn:hover { background: #f3f4f6; color: #111827; }
+    .settings-nav-btn--active { background: #6366f1; border-color: #6366f1; color: #fff; }
+    .settings-nav-btn--active:hover { background: #4f46e5; color: #fff; }
+    @media (max-width: 768px) { .settings-nav-btn { white-space: nowrap; } }
+
+    .settings-content { flex: 1; min-width: 0; }
+
+    .settings-card {
       background: #fff;
       border: 1px solid #e5e7eb;
-      border-radius: 14px;
+      border-radius: 12px;
       padding: 24px;
-      margin-bottom: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
-
-    .section-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-      margin-bottom: 20px;
-    }
-    .section-header h2 { font-size: 15px; font-weight: 600; margin: 0 0 2px; color: #111827; }
-    .section-header p { font-size: 13px; color: #6b7280; margin: 0; }
-    .section-header > *:last-child { margin-left: auto; flex-shrink: 0; }
-
-    .section-icon {
-      width: 36px; height: 36px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .license-icon { background: #ede9fe; color: #7c3aed; }
-    .general-icon { background: #e0f2fe; color: #0369a1; }
-    .notif-icon   { background: #fef3c7; color: #d97706; }
-    .billing-icon { background: #dcfce7; color: #16a34a; }
-    .tax-icon     { background: #fee2e2; color: #dc2626; }
+    .settings-section-title { margin: 0; font-size: 1.15rem; font-weight: 700; color: #111827; }
+    .settings-section-desc { margin: 4px 0 20px; font-size: 0.82rem; color: #6b7280; line-height: 1.5; }
 
     .status-chip {
       font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px;
@@ -549,6 +565,12 @@ export class SysadminSettingsComponent implements OnInit {
   private readonly http    = inject(HttpClient);
   private readonly auth    = inject(AuthService);
   private readonly cfg     = inject(AppConfigService);
+
+  activeSection = signal<'license' | 'billing' | 'tax' | 'general' | 'notifications'>('license');
+
+  setSection(section: 'license' | 'billing' | 'tax' | 'general' | 'notifications'): void {
+    this.activeSection.set(section);
+  }
 
   licenseLoading = signal(true);
   licenseError   = signal<string | null>(null);

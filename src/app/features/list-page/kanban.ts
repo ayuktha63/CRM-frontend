@@ -297,6 +297,7 @@ export class KanbanComponent implements OnInit, OnChanges {
       this.columns = [
         { name: 'NEW', label: 'New', color: '#3B82F6' },
         { name: 'QUALIFIED', label: 'Qualified', color: '#10B981' },
+        { name: 'CONVERTED', label: 'Converted', color: '#8B5CF6' },
         { name: 'DISQUALIFIED', label: 'Disqualified', color: '#EF4444' }
       ];
     } else if (this.resource === 'tasks') {

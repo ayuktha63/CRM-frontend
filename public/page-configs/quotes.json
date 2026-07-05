@@ -160,19 +160,25 @@
           "name": "quoteNumber",
           "label": "Quote Number",
           "type": "input",
+          "isDisabled": true,
+          "placeholder": "Auto-generated on save",
           "colSpan": "col-1"
         },
         {
           "name": "contact",
           "label": "Contact",
-          "type": "input",
+          "type": "combobox",
+          "optionsSource": "contacts",
           "required": true,
+          "placeholder": "Pick or type a contact name",
           "colSpan": "col-1"
         },
         {
           "name": "account",
           "label": "Account",
-          "type": "input",
+          "type": "combobox",
+          "optionsSource": "accounts",
+          "placeholder": "Pick or type an account name",
           "colSpan": "col-1"
         },
         {
