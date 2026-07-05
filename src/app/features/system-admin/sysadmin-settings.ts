@@ -5,6 +5,17 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth';
 import { AppConfigService } from '../../core/services/app-config.service';
 
+interface TaxCountry {
+  countryCode: string;
+  countryName: string;
+  taxSystem: string;
+  registrationLabel: string;
+  requiresBusinessState: boolean;
+  sameStateComponents: { name: string; rate: number }[] | null;
+  differentStateComponents: { name: string; rate: number }[] | null;
+  flatComponents: { name: string; rate: number }[] | null;
+}
+
 @Component({
   selector: 'app-sysadmin-settings',
   standalone: true,
@@ -212,6 +223,75 @@ import { AppConfigService } from '../../core/services/app-config.service';
         }
       </section>
 
+      <!-- ── Tax Configuration ── -->
+      <section class="settings-section">
+        <div class="section-header">
+          <div class="section-icon tax-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+          </div>
+          <div>
+            <h2>Tax Configuration</h2>
+            <p>Sets the country/tax system this tenant uses — every Quote, Invoice, Sales Order and report switches automatically</p>
+          </div>
+        </div>
+
+        @if (taxLoading()) {
+          <span class="loading-chip">Loading…</span>
+        } @else {
+
+        @if (taxError()) {
+          <div class="info-banner info-warn">{{ taxError() }}</div>
+        }
+
+        <div class="settings-row">
+          <div class="setting-item">
+            <div class="setting-label">
+              <span>Country</span>
+              <span class="setting-desc">Determines the tax system (GST, VAT, ...) and its rules</span>
+            </div>
+            <select class="setting-select" [ngModel]="taxForm.countryCode" (ngModelChange)="onCountryChange($event)">
+              <option value="" disabled>Select a country…</option>
+              @for (c of taxCountries(); track c.countryCode) {
+                <option [value]="c.countryCode">{{ c.countryName }} ({{ c.taxSystem }})</option>
+              }
+            </select>
+          </div>
+
+          @if (selectedCountry()?.requiresBusinessState) {
+          <div class="setting-item">
+            <div class="setting-label">
+              <span>Business State</span>
+              <span class="setting-desc">Your own registered state — compared against each customer's state to decide CGST/SGST vs IGST</span>
+            </div>
+            <input class="setting-input" type="text" [(ngModel)]="taxForm.businessState" placeholder="e.g. Kerala" />
+          </div>
+          }
+
+          @if (taxForm.countryCode) {
+          <div class="setting-item">
+            <div class="setting-label">
+              <span>{{ selectedCountry()?.registrationLabel || 'Registration Number' }}</span>
+              <span class="setting-desc">Tax registration number, printed on Invoice PDFs</span>
+            </div>
+            <input class="setting-input" type="text" [(ngModel)]="taxForm.registrationNumber" placeholder="e.g. 32ABCDE1234A1Z5" />
+          </div>
+          }
+        </div>
+
+        <div class="section-actions">
+          <button class="btn-save" (click)="saveTaxSettings()" [disabled]="taxSaving() || !taxForm.countryCode">
+            {{ taxSaving() ? 'Saving…' : 'Save Tax Settings' }}
+          </button>
+          @if (taxSaveSuccess()) {
+            <span class="save-success">✓ Saved — entire CRM now uses {{ selectedCountry()?.taxSystem }}</span>
+          }
+        </div>
+
+        }
+      </section>
+
       <!-- ── General CRM Settings ── -->
       <section class="settings-section">
         <div class="section-header">
@@ -381,6 +461,7 @@ import { AppConfigService } from '../../core/services/app-config.service';
     .general-icon { background: #e0f2fe; color: #0369a1; }
     .notif-icon   { background: #fef3c7; color: #d97706; }
     .billing-icon { background: #dcfce7; color: #16a34a; }
+    .tax-icon     { background: #fee2e2; color: #dc2626; }
 
     .status-chip {
       font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px;
@@ -496,6 +577,19 @@ export class SysadminSettingsComponent implements OnInit {
     upiId: '', paymentTermsDays: 30, lateFeeText: ''
   };
 
+  taxLoading     = signal(true);
+  taxError       = signal<string | null>(null);
+  taxSaving      = signal(false);
+  taxSaveSuccess = signal(false);
+  taxCountries   = signal<TaxCountry[]>([]);
+
+  taxForm = {
+    countryCode: '', countryName: '', taxSystem: '', registrationLabel: '',
+    registrationNumber: '', businessState: '', requiresBusinessState: false, configJson: ''
+  };
+
+  selectedCountry = signal<TaxCountry | null>(null);
+
   prefs = {
     currency:    localStorage.getItem('crm_currency')    ?? 'INR',
     dateFormat:  localStorage.getItem('crm_date_format') ?? 'DD/MM/YYYY',
@@ -551,6 +645,72 @@ export class SysadminSettingsComponent implements OnInit {
         error: err => {
           this.billingError.set(err?.error?.message || 'Could not load billing details.');
           this.billingLoading.set(false);
+        }
+      });
+
+    this.http.get<TaxCountry[]>('/tax-countries.json').subscribe({
+      next: countries => {
+        this.taxCountries.set(countries || []);
+        this.loadTaxSettings();
+      },
+      error: () => {
+        this.taxError.set('Could not load the supported countries list.');
+        this.taxLoading.set(false);
+      }
+    });
+  }
+
+  private loadTaxSettings(): void {
+    this.http.get<any>(`${this.cfg.crmApiUrl}/api/v1/tax-settings/me`, { headers: this.hdrs() })
+      .subscribe({
+        next: res => {
+          if (res?.countryCode) {
+            this.taxForm = {
+              countryCode: res.countryCode,
+              countryName: res.countryName ?? '',
+              taxSystem: res.taxSystem ?? '',
+              registrationLabel: res.registrationLabel ?? '',
+              registrationNumber: res.registrationNumber ?? '',
+              businessState: res.businessState ?? '',
+              requiresBusinessState: !!res.requiresBusinessState,
+              configJson: res.configJson ?? ''
+            };
+            this.selectedCountry.set(this.taxCountries().find(c => c.countryCode === res.countryCode) ?? null);
+          }
+          this.taxLoading.set(false);
+        },
+        error: err => {
+          this.taxError.set(err?.error?.message || 'Could not load tax settings.');
+          this.taxLoading.set(false);
+        }
+      });
+  }
+
+  onCountryChange(countryCode: string): void {
+    const country = this.taxCountries().find(c => c.countryCode === countryCode) ?? null;
+    this.selectedCountry.set(country);
+    if (!country) return;
+    this.taxForm.countryCode = country.countryCode;
+    this.taxForm.countryName = country.countryName;
+    this.taxForm.taxSystem = country.taxSystem;
+    this.taxForm.registrationLabel = country.registrationLabel;
+    this.taxForm.requiresBusinessState = country.requiresBusinessState;
+    this.taxForm.configJson = JSON.stringify(country);
+  }
+
+  saveTaxSettings(): void {
+    this.taxSaving.set(true);
+    this.taxError.set(null);
+    this.http.put<any>(`${this.cfg.crmApiUrl}/api/v1/tax-settings/me`, this.taxForm, { headers: this.hdrs() })
+      .subscribe({
+        next: () => {
+          this.taxSaving.set(false);
+          this.taxSaveSuccess.set(true);
+          setTimeout(() => this.taxSaveSuccess.set(false), 3000);
+        },
+        error: err => {
+          this.taxSaving.set(false);
+          this.taxError.set(err?.error?.message || 'Failed to save tax settings.');
         }
       });
   }

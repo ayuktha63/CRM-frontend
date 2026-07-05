@@ -182,6 +182,13 @@
           "colSpan": "col-3"
         },
         {
+          "name": "customerState",
+          "label": "Customer State",
+          "type": "input",
+          "colSpan": "col-1",
+          "placeholder": "For GST: same-state vs different-state tax"
+        },
+        {
           "name": "validUntil",
           "label": "Valid Until",
           "type": "date",

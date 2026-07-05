@@ -1,0 +1,41 @@
+[
+  {
+    "countryCode": "IN",
+    "countryName": "India",
+    "taxSystem": "GST",
+    "registrationLabel": "GSTIN",
+    "requiresBusinessState": true,
+    "sameStateComponents": [
+      { "name": "CGST", "rate": 9 },
+      { "name": "SGST", "rate": 9 }
+    ],
+    "differentStateComponents": [
+      { "name": "IGST", "rate": 18 }
+    ],
+    "flatComponents": null
+  },
+  {
+    "countryCode": "AE",
+    "countryName": "United Arab Emirates",
+    "taxSystem": "VAT",
+    "registrationLabel": "TRN",
+    "requiresBusinessState": false,
+    "sameStateComponents": null,
+    "differentStateComponents": null,
+    "flatComponents": [
+      { "name": "VAT", "rate": 5 }
+    ]
+  },
+  {
+    "countryCode": "KE",
+    "countryName": "Kenya",
+    "taxSystem": "VAT",
+    "registrationLabel": "PIN",
+    "requiresBusinessState": false,
+    "sameStateComponents": null,
+    "differentStateComponents": null,
+    "flatComponents": [
+      { "name": "VAT", "rate": 16 }
+    ]
+  }
+]
