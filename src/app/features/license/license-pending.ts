@@ -115,7 +115,7 @@ import { AuthService } from '../../core/services/auth';
       height: 28px;
       min-width: 28px;
       border-radius: 50%;
-      background: #6366f1;
+      background: #0F3460;
       color: #fff;
       display: flex;
       align-items: center;
@@ -143,7 +143,7 @@ import { AuthService } from '../../core/services/auth';
       justify-content: center;
     }
     .btn-retry {
-      background: #6366f1;
+      background: #0F3460;
       color: #fff;
       border: none;
       padding: 10px 24px;
@@ -152,7 +152,7 @@ import { AuthService } from '../../core/services/auth';
       font-weight: 500;
       cursor: pointer;
     }
-    .btn-retry:hover { background: #4f46e5; }
+    .btn-retry:hover { background: #0F3460; }
     .btn-logout {
       background: #fff;
       color: #374151;

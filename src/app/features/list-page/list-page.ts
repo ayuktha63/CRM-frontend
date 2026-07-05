@@ -169,7 +169,7 @@ import { AuthService } from '../../core/services/auth';
               </span>
             </div>
             <div class="pdf-bar-right">
-              <button class="pdf-bar-action-btn pdf-btn-secondary" (click)="openBulkEditDrawer()" style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); color: var(--crm-primary);">
+              <button class="pdf-bar-action-btn pdf-btn-secondary" (click)="openBulkEditDrawer()" style="background: rgba(15, 52, 96, 0.1); border: 1px solid rgba(15, 52, 96, 0.3); color: var(--crm-primary);">
                 Bulk Edit
               </button>
               <button class="pdf-bar-action-btn pdf-btn-secondary" (click)="openBulkAssignDrawer()" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #D97706;" *ngIf="auth.getRole() === 'SYSTEM_ADMIN'">
@@ -240,8 +240,8 @@ import { AuthService } from '../../core/services/auth';
           <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--crm-border);">
             <div style="display:flex;align-items:center;gap:10px;">
               <span style="font-size:0.68rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border-radius:20px;"
-                    [style.background]="resource==='invoices'?'rgba(16,185,129,0.1)':'rgba(99,102,241,0.1)'"
-                    [style.color]="resource==='invoices'?'#10B981':'#6366F1'">
+                    [style.background]="resource==='invoices'?'rgba(16,185,129,0.1)':'rgba(15,52,96,0.1)'"
+                    [style.color]="resource==='invoices'?'#10B981':'#0F3460'">
                 {{ resource === 'invoices' ? 'Invoice' : 'Quote' }}
               </span>
               <h2 style="font-size:1.05rem;font-weight:700;color:var(--crm-text-1);margin:0;">
@@ -282,7 +282,7 @@ import { AuthService } from '../../core/services/auth';
             </button>
             <button (click)="selectedRow=previewRecord;downloadPdfForSelected(resource==='invoices'?'invoices':'quotes');previewRecord=null"
                     [disabled]="pdfDownloading"
-                    style="display:flex;align-items:center;gap:6px;padding:7px 16px;border:none;border-radius:8px;background:#6366F1;color:#fff;font-size:0.8rem;font-weight:600;cursor:pointer;">
+                    style="display:flex;align-items:center;gap:6px;padding:7px 16px;border:none;border-radius:8px;background:#0F3460;color:#fff;font-size:0.8rem;font-weight:600;cursor:pointer;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>

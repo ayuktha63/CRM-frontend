@@ -196,14 +196,14 @@ import {
     .form-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
     .form-field label { font-size: 12px; font-weight: 500; color: var(--text-secondary, #666); }
     .form-field input, .form-field textarea { border: 1px solid var(--border, #d1d5db); border-radius: 8px; padding: 8px 12px; font-size: 14px; outline: none; resize: vertical; }
-    .form-field input:focus, .form-field textarea:focus { border-color: var(--primary, #6366f1); box-shadow: 0 0 0 2px rgba(99,102,241,.15); }
+    .form-field input:focus, .form-field textarea:focus { border-color: var(--primary, #0F3460); box-shadow: 0 0 0 2px rgba(15,52,96,.15); }
     .error { color: #ef4444; font-size: 11px; }
     .form-actions { margin-top: 4px; }
-    .btn-primary { background: var(--primary, #6366f1); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 500; }
+    .btn-primary { background: var(--primary, #0F3460); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 500; }
     .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
     .error-banner { color: #ef4444; margin-top: 8px; font-size: 13px; }
     .success-banner { color: #166534; margin-top: 8px; font-size: 13px; }
-    .badge-sysadmin { font-size: 10px; font-weight: 600; background: #ede9fe; color: #6d28d9; padding: 2px 8px; border-radius: 999px; vertical-align: middle; margin-left: 8px; }
+    .badge-sysadmin { font-size: 10px; font-weight: 600; background: #E8EDF5; color: #0F3460; padding: 2px 8px; border-radius: 999px; vertical-align: middle; margin-left: 8px; }
     .key-result { margin-top: 16px; background: #f8fafc; border: 1px solid var(--border, #e5e7eb); border-radius: 8px; padding: 16px; }
     .key-result label { font-size: 12px; font-weight: 500; color: var(--text-secondary, #666); display: block; margin-bottom: 8px; }
     .key-result code { display: block; word-break: break-all; font-family: monospace; font-size: 13px; background: #1e1e2e; color: #a6e3a1; padding: 12px; border-radius: 6px; margin-bottom: 8px; }

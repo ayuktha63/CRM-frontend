@@ -140,10 +140,10 @@ import {
     .form-field { display: flex; flex-direction: column; gap: 4px; }
     .form-field label { font-size: 12px; font-weight: 500; color: var(--text-secondary, #666); }
     .form-field input { border: 1px solid var(--border, #d1d5db); border-radius: 8px; padding: 8px 12px; font-size: 14px; outline: none; }
-    .form-field input:focus { border-color: var(--primary, #6366f1); box-shadow: 0 0 0 2px rgba(99,102,241,.15); }
+    .form-field input:focus { border-color: var(--primary, #0F3460); box-shadow: 0 0 0 2px rgba(15,52,96,.15); }
     .error { color: #ef4444; font-size: 11px; }
     .form-actions { margin-top: 16px; }
-    .btn-primary { background: var(--primary, #6366f1); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 500; }
+    .btn-primary { background: var(--primary, #0F3460); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 500; }
     .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
     .error-banner { color: #ef4444; margin-top: 8px; font-size: 13px; }
     .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }

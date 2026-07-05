@@ -533,8 +533,8 @@ interface TaxCountry {
     }
     .settings-nav-btn svg { stroke: currentColor; flex-shrink: 0; }
     .settings-nav-btn:hover { background: #f3f4f6; color: #111827; }
-    .settings-nav-btn--active { background: #6366f1; border-color: #6366f1; color: #fff; }
-    .settings-nav-btn--active:hover { background: #4f46e5; color: #fff; }
+    .settings-nav-btn--active { background: #0F3460; border-color: #0F3460; color: #fff; }
+    .settings-nav-btn--active:hover { background: #163E7A; color: #fff; }
     @media (max-width: 768px) { .settings-nav-btn { white-space: nowrap; } }
 
     .settings-content { flex: 1; min-width: 0; }
@@ -594,7 +594,7 @@ interface TaxCountry {
       background: #f9fafb; cursor: pointer; outline: none;
       min-width: 180px;
     }
-    .setting-select:focus { border-color: #6366f1; background: #fff; }
+    .setting-select:focus { border-color: #0F3460; background: #fff; }
 
     .setting-input {
       border: 1px solid #d1d5db; border-radius: 8px;
@@ -602,11 +602,11 @@ interface TaxCountry {
       background: #f9fafb; outline: none;
       min-width: 260px; box-sizing: border-box;
     }
-    .setting-input:focus { border-color: #6366f1; background: #fff; }
+    .setting-input:focus { border-color: #0F3460; background: #fff; }
 
     .section-actions { margin-top: 20px; display: flex; align-items: center; gap: 12px; }
     .btn-save {
-      background: #6366f1; color: #fff; border: none;
+      background: #0F3460; color: #fff; border: none;
       padding: 9px 22px; border-radius: 8px;
       font-size: 14px; font-weight: 500; cursor: pointer;
     }
@@ -636,7 +636,7 @@ interface TaxCountry {
       left: 3px; top: 3px;
       transition: transform 0.2s;
     }
-    .toggle-switch input:checked + .toggle-track { background: #6366f1; }
+    .toggle-switch input:checked + .toggle-track { background: #0F3460; }
     .toggle-switch input:checked + .toggle-track::after { transform: translateX(18px); }
   `]
 })
