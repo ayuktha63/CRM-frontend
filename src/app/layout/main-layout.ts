@@ -331,8 +331,6 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
           icon: `<path d="M9 17H5a2 2 0 0 0-2 2v3"/><path d="M15 17h4a2 2 0 0 1 2 2v3"/><path d="M12 2v10"/><polyline points="8 6 12 2 16 6"/>` },
         { key: 'dashboard-builder', label: 'Dash Builder', route: '/dashboard-builder',
           icon: `<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>` },
-        { key: 'analytics', label: 'Analytics', route: '/analytics',
-          icon: `<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>` },
       ]
     });
 

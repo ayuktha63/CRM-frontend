@@ -130,12 +130,6 @@ export const routes: Routes = [
         data: { resource: 'reports' }
       },
       {
-        path: 'analytics',
-        loadComponent: () =>
-          import('./features/list-page/list-page').then(m => m.ListPageComponent),
-        data: { resource: 'analytics' }
-      },
-      {
         path: 'report-builder',
         loadComponent: () =>
           import('./features/list-page/list-page').then(m => m.ListPageComponent),

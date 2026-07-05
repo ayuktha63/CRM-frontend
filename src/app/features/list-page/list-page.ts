@@ -86,9 +86,6 @@ import { AuthService } from '../../core/services/auth';
       @else if (resource === 'reports') {
         <app-reports></app-reports>
       }
-      @else if (resource === 'analytics') {
-        <app-reports></app-reports>
-      }
       @else if (resource === 'report-builder') {
         <app-report-builder></app-report-builder>
       }
@@ -599,7 +596,7 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
 
   isCustomResource(): boolean {
     return [
-      'calendar', 'reports', 'analytics', 'report-builder', 'customization', 
+      'calendar', 'reports', 'report-builder', 'customization',
       'emails', 'inventory', 'dashboard-builder', 'user-settings'
     ].includes(this.resource);
   }
