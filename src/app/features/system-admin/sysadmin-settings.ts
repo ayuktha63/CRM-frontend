@@ -48,6 +48,12 @@ interface TaxCountry {
             </svg>
             Tax Configuration
           </button>
+          <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'numbering'" (click)="setSection('numbering')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line>
+            </svg>
+            Document Numbering
+          </button>
           <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'general'" (click)="setSection('general')">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -293,6 +299,79 @@ interface TaxCountry {
               </button>
               @if (taxSaveSuccess()) {
                 <span class="save-success">✓ Saved — entire CRM now uses {{ selectedCountry()?.taxSystem }}</span>
+              }
+            </div>
+
+            }
+          </div>
+          }
+
+          <!-- ── Document Numbering (Quotes/Invoices) ── -->
+          @if (activeSection() === 'numbering') {
+          <div class="settings-card">
+            <h2 class="settings-section-title">Document Numbering</h2>
+            <p class="settings-section-desc">One continuous series per tenant — every quote/invoice across all your users draws from this same counter. The next number is never directly editable (by anyone, including you) to prevent gaps or collisions; use "Starting Number" only to seed or reset the series.</p>
+
+            @if (numberingLoading()) {
+              <span class="loading-chip">Loading…</span>
+            } @else {
+
+            @if (numberingError()) {
+              <div class="info-banner info-warn">{{ numberingError() }}</div>
+            }
+
+            <div class="settings-row">
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Quotation Series Prefix</span>
+                  <span class="setting-desc">Shown before the number, e.g. "Q-"</span>
+                </div>
+                <input class="setting-input" type="text" [(ngModel)]="numberingForm.quoteSeriesPrefix" placeholder="e.g. Q-" />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Starting Quotation Number</span>
+                  <span class="setting-desc">Seeds/resets the series — leave alone unless you're initializing or restarting numbering</span>
+                </div>
+                <input class="setting-input" type="number" min="1" [(ngModel)]="numberingForm.quoteStartingNumber" />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Next Quotation Number</span>
+                  <span class="setting-desc">Read-only — current live counter</span>
+                </div>
+                <input class="setting-input" type="text" [value]="numberingForm.quoteSeriesPrefix + numberingCurrent.quoteNextNumber" disabled />
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Invoice Series Prefix</span>
+                  <span class="setting-desc">Shown before the number, e.g. "INV-"</span>
+                </div>
+                <input class="setting-input" type="text" [(ngModel)]="numberingForm.invoiceSeriesPrefix" placeholder="e.g. INV-" />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Starting Invoice Number</span>
+                  <span class="setting-desc">Seeds/resets the series — leave alone unless you're initializing or restarting numbering</span>
+                </div>
+                <input class="setting-input" type="number" min="1" [(ngModel)]="numberingForm.invoiceStartingNumber" />
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Next Invoice Number</span>
+                  <span class="setting-desc">Read-only — current live counter</span>
+                </div>
+                <input class="setting-input" type="text" [value]="numberingForm.invoiceSeriesPrefix + numberingCurrent.invoiceNextNumber" disabled />
+              </div>
+            </div>
+
+            <div class="section-actions">
+              <button class="btn-save" (click)="saveNumbering()" [disabled]="numberingSaving()">
+                {{ numberingSaving() ? 'Saving…' : 'Save Numbering Settings' }}
+              </button>
+              @if (numberingSaveSuccess()) {
+                <span class="save-success">✓ Saved</span>
               }
             </div>
 
@@ -566,9 +645,9 @@ export class SysadminSettingsComponent implements OnInit {
   private readonly auth    = inject(AuthService);
   private readonly cfg     = inject(AppConfigService);
 
-  activeSection = signal<'license' | 'billing' | 'tax' | 'general' | 'notifications'>('license');
+  activeSection = signal<'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications'>('license');
 
-  setSection(section: 'license' | 'billing' | 'tax' | 'general' | 'notifications'): void {
+  setSection(section: 'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications'): void {
     this.activeSection.set(section);
   }
 
@@ -602,6 +681,18 @@ export class SysadminSettingsComponent implements OnInit {
   };
 
   selectedCountry = signal<TaxCountry | null>(null);
+
+  numberingLoading     = signal(true);
+  numberingError       = signal<string | null>(null);
+  numberingSaving      = signal(false);
+  numberingSaveSuccess = signal(false);
+
+  numberingForm = {
+    quoteSeriesPrefix: 'Q-', quoteStartingNumber: 1001,
+    invoiceSeriesPrefix: 'INV-', invoiceStartingNumber: 1001
+  };
+  /** Live read-only counter values, as currently stored — distinct from the editable "starting number" above. */
+  numberingCurrent = { quoteNextNumber: 1001, invoiceNextNumber: 1001 };
 
   prefs = {
     currency:    localStorage.getItem('crm_currency')    ?? 'INR',
@@ -671,6 +762,57 @@ export class SysadminSettingsComponent implements OnInit {
         this.taxLoading.set(false);
       }
     });
+
+    this.loadNumbering();
+  }
+
+  private loadNumbering(): void {
+    this.http.get<any>(`${this.cfg.crmApiUrl}/api/v1/user-settings`, { headers: this.hdrs() })
+      .subscribe({
+        next: res => {
+          const quoteNext = res?.quoteNextNumber ?? 1001;
+          const invoiceNext = res?.invoiceNextNumber ?? 1001;
+          this.numberingForm = {
+            quoteSeriesPrefix: res?.quoteSeriesPrefix ?? 'Q-',
+            quoteStartingNumber: quoteNext,
+            invoiceSeriesPrefix: res?.invoiceSeriesPrefix ?? 'INV-',
+            invoiceStartingNumber: invoiceNext
+          };
+          this.numberingCurrent = { quoteNextNumber: quoteNext, invoiceNextNumber: invoiceNext };
+          this.numberingLoading.set(false);
+        },
+        error: err => {
+          this.numberingError.set(err?.error?.message || 'Could not load document numbering settings.');
+          this.numberingLoading.set(false);
+        }
+      });
+  }
+
+  saveNumbering(): void {
+    this.numberingSaving.set(true);
+    this.numberingError.set(null);
+    const payload = {
+      quoteSeriesPrefix: this.numberingForm.quoteSeriesPrefix,
+      quoteNextNumber: this.numberingForm.quoteStartingNumber,
+      invoiceSeriesPrefix: this.numberingForm.invoiceSeriesPrefix,
+      invoiceNextNumber: this.numberingForm.invoiceStartingNumber
+    };
+    this.http.put<any>(`${this.cfg.crmApiUrl}/api/v1/user-settings`, payload, { headers: this.hdrs() })
+      .subscribe({
+        next: res => {
+          this.numberingCurrent = {
+            quoteNextNumber: res?.quoteNextNumber ?? this.numberingForm.quoteStartingNumber,
+            invoiceNextNumber: res?.invoiceNextNumber ?? this.numberingForm.invoiceStartingNumber
+          };
+          this.numberingSaving.set(false);
+          this.numberingSaveSuccess.set(true);
+          setTimeout(() => this.numberingSaveSuccess.set(false), 3000);
+        },
+        error: err => {
+          this.numberingSaving.set(false);
+          this.numberingError.set(err?.error?.message || 'Failed to save document numbering settings.');
+        }
+      });
   }
 
   private loadTaxSettings(): void {
