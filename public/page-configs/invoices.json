@@ -163,12 +163,10 @@
           "colSpan": "col-1"
         },
         {
-          "name": "amount",
-          "label": "Amount (\u20b9)",
-          "type": "input",
-          "inputType": "number",
-          "required": true,
-          "colSpan": "col-1"
+          "name": "lineItems",
+          "label": "Products",
+          "type": "lineItems",
+          "colSpan": "col-3"
         },
         {
           "name": "dueDate",
