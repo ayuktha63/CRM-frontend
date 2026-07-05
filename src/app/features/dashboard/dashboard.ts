@@ -337,16 +337,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private formatCrore(v: number): string {
     if (!v) return '₹0';
-    if (v >= 10000000) return `₹${(v / 10000000).toFixed(1)} Cr`;
-    if (v >= 100000)   return `₹${(v / 100000).toFixed(1)} L`;
-    return `₹${v.toLocaleString()}`;
+    return `₹${Math.round(v).toLocaleString('en-IN')}`;
   }
 
   private formatLakh(v: number): string {
     if (!v) return '—';
-    if (v >= 10000000) return `₹${(v / 10000000).toFixed(1)} Cr`;
-    if (v >= 100000)   return `₹${(v / 100000).toFixed(1)} L`;
-    return `₹${v.toLocaleString()}`;
+    return `₹${Math.round(v).toLocaleString('en-IN')}`;
   }
 
   private pluralize(count: number, singular: string): string {
