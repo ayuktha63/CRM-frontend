@@ -5,6 +5,13 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth';
 import { AppConfigService } from '../../core/services/app-config.service';
 
+interface GoogleCalendarStatus {
+  connected: boolean;
+  googleEmail?: string;
+  syncEnabled?: boolean;
+  lastSyncedAt?: string;
+}
+
 interface TaxCountry {
   countryCode: string;
   countryName: string;
@@ -65,6 +72,15 @@ interface TaxCountry {
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
             Notifications
+          </button>
+          <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'calendar'" (click)="setSection('calendar')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Calendar Sync
           </button>
         </aside>
 
@@ -449,6 +465,52 @@ interface TaxCountry {
           </div>
           }
 
+          <!-- ── Calendar Sync ── -->
+          @if (activeSection() === 'calendar') {
+          <div class="settings-card">
+            <h2 class="settings-section-title">Calendar Sync Integration</h2>
+            <p class="settings-section-desc">Connect your own Google account to sync your CRM meetings and tasks both ways with Google Calendar.</p>
+
+            <div class="google-cal-card">
+              <div class="google-cal-info">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <div>
+                  @if (!loadingGoogleStatus()) {
+                    @if (googleCalendarStatus().connected) {
+                      <strong>Connected</strong> — {{ googleCalendarStatus().googleEmail }}
+                      @if (googleCalendarStatus().lastSyncedAt) {
+                        <div class="google-cal-sub">Last synced {{ formatDate(googleCalendarStatus().lastSyncedAt) }}</div>
+                      }
+                    } @else {
+                      <strong>Not connected</strong>
+                      <div class="google-cal-sub">Connect your own Google account to sync events both ways.</div>
+                    }
+                  } @else {
+                    <span>Checking connection status…</span>
+                  }
+                </div>
+              </div>
+              <div class="google-cal-actions">
+                @if (!googleCalendarStatus().connected) {
+                  <button class="btn-save" [disabled]="connectingGoogle()" (click)="connectGoogleCalendar()">
+                    {{ connectingGoogle() ? 'Redirecting…' : 'Connect Google Calendar' }}
+                  </button>
+                } @else {
+                  <button class="btn-save" [disabled]="syncingGoogle()" (click)="syncGoogleCalendarNow()">
+                    {{ syncingGoogle() ? 'Syncing…' : 'Sync Now' }}
+                  </button>
+                  <button class="btn-secondary" (click)="disconnectGoogleCalendar()">Disconnect</button>
+                }
+              </div>
+            </div>
+          </div>
+          }
+
           <!-- ── Notifications ── -->
           @if (activeSection() === 'notifications') {
           <div class="settings-card">
@@ -638,6 +700,22 @@ interface TaxCountry {
     }
     .toggle-switch input:checked + .toggle-track { background: #0F3460; }
     .toggle-switch input:checked + .toggle-track::after { transform: translateX(18px); }
+
+    .google-cal-card {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 16px 18px;
+      border: 1px solid #e5e7eb; border-radius: 10px; background: #f9fafb;
+      flex-wrap: wrap;
+    }
+    .google-cal-info { display: flex; align-items: center; gap: 12px; color: #374151; font-size: 0.85rem; }
+    .google-cal-info svg { color: #0F3460; flex-shrink: 0; }
+    .google-cal-sub { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
+    .google-cal-actions { display: flex; gap: 8px; }
+    .btn-secondary {
+      padding: 9px 18px; border: 1px solid #d1d5db; border-radius: 8px;
+      background: #fff; color: #4b5563; font-size: 14px; font-weight: 500; cursor: pointer;
+    }
+    .btn-secondary:hover { background: #f3f4f6; }
   `]
 })
 export class SysadminSettingsComponent implements OnInit {
@@ -645,9 +723,9 @@ export class SysadminSettingsComponent implements OnInit {
   private readonly auth    = inject(AuthService);
   private readonly cfg     = inject(AppConfigService);
 
-  activeSection = signal<'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications'>('license');
+  activeSection = signal<'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications' | 'calendar'>('license');
 
-  setSection(section: 'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications'): void {
+  setSection(section: 'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications' | 'calendar'): void {
     this.activeSection.set(section);
   }
 
@@ -693,6 +771,11 @@ export class SysadminSettingsComponent implements OnInit {
   };
   /** Live read-only counter values, as currently stored — distinct from the editable "starting number" above. */
   numberingCurrent = { quoteNextNumber: 1001, invoiceNextNumber: 1001 };
+
+  googleCalendarStatus = signal<GoogleCalendarStatus>({ connected: false });
+  loadingGoogleStatus  = signal(true);
+  connectingGoogle     = signal(false);
+  syncingGoogle        = signal(false);
 
   prefs = {
     currency:    localStorage.getItem('crm_currency')    ?? 'INR',
@@ -764,6 +847,62 @@ export class SysadminSettingsComponent implements OnInit {
     });
 
     this.loadNumbering();
+    this.loadGoogleCalendarStatus();
+    this.handleGoogleCalendarRedirect();
+  }
+
+  private handleGoogleCalendarRedirect(): void {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('googleCalendar');
+    if (!status) return;
+    if (status === 'connected') {
+      this.loadGoogleCalendarStatus();
+    }
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+
+  loadGoogleCalendarStatus(): void {
+    this.loadingGoogleStatus.set(true);
+    this.http.get<GoogleCalendarStatus>(`${this.cfg.crmApiUrl}/api/v1/calendar/google/oauth/status`, { headers: this.hdrs() })
+      .subscribe({
+        next: status => {
+          this.googleCalendarStatus.set(status);
+          this.loadingGoogleStatus.set(false);
+        },
+        error: () => {
+          this.googleCalendarStatus.set({ connected: false });
+          this.loadingGoogleStatus.set(false);
+        }
+      });
+  }
+
+  connectGoogleCalendar(): void {
+    this.connectingGoogle.set(true);
+    this.http.get<{ url: string }>(`${this.cfg.crmApiUrl}/api/v1/calendar/google/oauth/url`, { headers: this.hdrs() })
+      .subscribe({
+        next: res => { window.location.href = res.url; },
+        error: () => this.connectingGoogle.set(false)
+      });
+  }
+
+  disconnectGoogleCalendar(): void {
+    this.http.post(`${this.cfg.crmApiUrl}/api/v1/calendar/google/oauth/disconnect`, {}, { headers: this.hdrs() })
+      .subscribe({
+        next: () => this.googleCalendarStatus.set({ connected: false }),
+        error: () => {}
+      });
+  }
+
+  syncGoogleCalendarNow(): void {
+    this.syncingGoogle.set(true);
+    this.http.post<any>(`${this.cfg.crmApiUrl}/api/v1/calendar-events/sync/google`, {}, { headers: this.hdrs() })
+      .subscribe({
+        next: () => {
+          this.syncingGoogle.set(false);
+          this.loadGoogleCalendarStatus();
+        },
+        error: () => this.syncingGoogle.set(false)
+      });
   }
 
   private loadNumbering(): void {
