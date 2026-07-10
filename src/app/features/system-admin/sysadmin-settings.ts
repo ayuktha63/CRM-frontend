@@ -12,6 +12,11 @@ interface GoogleCalendarStatus {
   lastSyncedAt?: string;
 }
 
+interface GoogleEmailStatus {
+  connected: boolean;
+  googleEmail?: string;
+}
+
 interface TaxCountry {
   countryCode: string;
   countryName: string;
@@ -81,6 +86,13 @@ interface TaxCountry {
               <line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
             Calendar Sync
+          </button>
+          <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'email'" (click)="setSection('email')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            Email Integration
           </button>
         </aside>
 
@@ -511,6 +523,44 @@ interface TaxCountry {
           </div>
           }
 
+          <!-- ── Email Integration ── -->
+          @if (activeSection() === 'email') {
+          <div class="settings-card">
+            <h2 class="settings-section-title">Email Integration</h2>
+            <p class="settings-section-desc">Connect your own Gmail account so emails you send from the CRM come from your address. Each user connects their own mailbox — nothing is shared across the team.</p>
+
+            <div class="google-cal-card">
+              <div class="google-cal-info">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+                <div>
+                  @if (!loadingGoogleEmailStatus()) {
+                    @if (googleEmailStatus().connected) {
+                      <strong>Connected</strong> — {{ googleEmailStatus().googleEmail }}
+                    } @else {
+                      <strong>Not connected</strong>
+                      <div class="google-cal-sub">Connect your Gmail account to send emails from the CRM as yourself.</div>
+                    }
+                  } @else {
+                    <span>Checking connection status…</span>
+                  }
+                </div>
+              </div>
+              <div class="google-cal-actions">
+                @if (!googleEmailStatus().connected) {
+                  <button class="btn-save" [disabled]="connectingGoogleEmail()" (click)="connectGoogleEmail()">
+                    {{ connectingGoogleEmail() ? 'Redirecting…' : 'Connect Gmail' }}
+                  </button>
+                } @else {
+                  <button class="btn-secondary" (click)="disconnectGoogleEmail()">Disconnect</button>
+                }
+              </div>
+            </div>
+          </div>
+          }
+
           <!-- ── Notifications ── -->
           @if (activeSection() === 'notifications') {
           <div class="settings-card">
@@ -723,9 +773,9 @@ export class SysadminSettingsComponent implements OnInit {
   private readonly auth    = inject(AuthService);
   private readonly cfg     = inject(AppConfigService);
 
-  activeSection = signal<'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications' | 'calendar'>('license');
+  activeSection = signal<'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications' | 'calendar' | 'email'>('license');
 
-  setSection(section: 'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications' | 'calendar'): void {
+  setSection(section: 'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications' | 'calendar' | 'email'): void {
     this.activeSection.set(section);
   }
 
@@ -776,6 +826,10 @@ export class SysadminSettingsComponent implements OnInit {
   loadingGoogleStatus  = signal(true);
   connectingGoogle     = signal(false);
   syncingGoogle        = signal(false);
+
+  googleEmailStatus       = signal<GoogleEmailStatus>({ connected: false });
+  loadingGoogleEmailStatus = signal(true);
+  connectingGoogleEmail    = signal(false);
 
   prefs = {
     currency:    localStorage.getItem('crm_currency')    ?? 'INR',
@@ -849,6 +903,8 @@ export class SysadminSettingsComponent implements OnInit {
     this.loadNumbering();
     this.loadGoogleCalendarStatus();
     this.handleGoogleCalendarRedirect();
+    this.loadGoogleEmailStatus();
+    this.handleGoogleEmailRedirect();
   }
 
   private handleGoogleCalendarRedirect(): void {
@@ -902,6 +958,48 @@ export class SysadminSettingsComponent implements OnInit {
           this.loadGoogleCalendarStatus();
         },
         error: () => this.syncingGoogle.set(false)
+      });
+  }
+
+  private handleGoogleEmailRedirect(): void {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('googleEmail');
+    if (!status) return;
+    if (status === 'connected') {
+      this.loadGoogleEmailStatus();
+    }
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+
+  loadGoogleEmailStatus(): void {
+    this.loadingGoogleEmailStatus.set(true);
+    this.http.get<GoogleEmailStatus>(`${this.cfg.crmApiUrl}/api/v1/email/google/oauth/status`, { headers: this.hdrs() })
+      .subscribe({
+        next: status => {
+          this.googleEmailStatus.set(status);
+          this.loadingGoogleEmailStatus.set(false);
+        },
+        error: () => {
+          this.googleEmailStatus.set({ connected: false });
+          this.loadingGoogleEmailStatus.set(false);
+        }
+      });
+  }
+
+  connectGoogleEmail(): void {
+    this.connectingGoogleEmail.set(true);
+    this.http.get<{ url: string }>(`${this.cfg.crmApiUrl}/api/v1/email/google/oauth/url`, { headers: this.hdrs() })
+      .subscribe({
+        next: res => { window.location.href = res.url; },
+        error: () => this.connectingGoogleEmail.set(false)
+      });
+  }
+
+  disconnectGoogleEmail(): void {
+    this.http.post(`${this.cfg.crmApiUrl}/api/v1/email/google/oauth/disconnect`, {}, { headers: this.hdrs() })
+      .subscribe({
+        next: () => this.googleEmailStatus.set({ connected: false }),
+        error: () => {}
       });
   }
 
