@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -14,6 +14,7 @@ import { AuthService } from '../../../core/services/auth';
 export class ForgotPasswordComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   email = '';
   loading = false;
@@ -33,11 +34,13 @@ export class ForgotPasswordComponent {
       next: () => {
         this.loading = false;
         this.submitted = true;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.loading = false;
         // Same generic message on error as on success — don't reveal whether the email exists.
         this.submitted = true;
+        this.cdr.detectChanges();
       }
     });
   }

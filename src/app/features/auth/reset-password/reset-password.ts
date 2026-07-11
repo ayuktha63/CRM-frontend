@@ -1,7 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { of } from 'rxjs';
+import { catchError, timeout } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth';
 
 @Component({
@@ -15,6 +17,7 @@ export class ResetPasswordComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   token = '';
   newPassword = '';
@@ -36,24 +39,31 @@ export class ResetPasswordComponent implements OnInit {
       this.checkingToken = false;
       return;
     }
+    this.checkToken();
+  }
 
-    this.authService.validateResetToken(this.token).subscribe({
-      next: (res) => {
-        this.checkingToken = false;
-        if (res.valid) {
-          this.username = res.username || '';
-          this.tenantName = res.tenantName || '';
-          this.maskedEmail = res.maskedEmail || '';
-        } else if (res.reason === 'expired') {
-          this.tokenExpired = true;
-        } else {
-          this.tokenInvalid = true;
-        }
-      },
-      error: () => {
-        this.checkingToken = false;
+  /** Public so the "Try again" action on a failed/timed-out check can re-run it. */
+  checkToken(): void {
+    this.checkingToken = true;
+    this.tokenInvalid = false;
+    this.tokenExpired = false;
+
+    this.authService.validateResetToken(this.token).pipe(
+      // Never leave the user staring at "Checking…" forever, whatever the cause.
+      timeout(10000),
+      catchError(() => of({ valid: false, reason: 'invalid' as const, username: undefined, tenantName: undefined, maskedEmail: undefined }))
+    ).subscribe((res) => {
+      this.checkingToken = false;
+      if (res.valid) {
+        this.username = res.username || '';
+        this.tenantName = res.tenantName || '';
+        this.maskedEmail = res.maskedEmail || '';
+      } else if (res.reason === 'expired') {
+        this.tokenExpired = true;
+      } else {
         this.tokenInvalid = true;
       }
+      this.cdr.detectChanges();
     });
   }
 
@@ -80,10 +90,12 @@ export class ResetPasswordComponent implements OnInit {
       next: (res) => {
         this.loading = false;
         this.successMessage = res.message || 'Your password has been reset successfully.';
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.loading = false;
         this.errorMessage = err?.error?.message || 'This reset link is invalid or has expired. Please request a new one.';
+        this.cdr.detectChanges();
       }
     });
   }
