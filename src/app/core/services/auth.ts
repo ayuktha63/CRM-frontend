@@ -39,6 +39,16 @@ export class AuthService {
     );
   }
 
+  /** App-switch entry point from OPAC. Must go through the same storeSession() as a
+   *  direct login — a hand-rolled duplicate here previously forgot to persist
+   *  accessPolicy at all, so every SSO'd-in user landed with an empty access list
+   *  regardless of their real personal activation. */
+  ssoLogin(token: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/sso`, { token }).pipe(
+      tap(r => this.storeSession(r))
+    );
+  }
+
   private storeSession(r: AuthResponse): void {
     // Wipe stale license state so the guard re-fetches fresh policy on next nav
     localStorage.removeItem('licenseStatus');
