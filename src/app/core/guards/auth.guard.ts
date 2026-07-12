@@ -5,7 +5,7 @@ import { OrganizationService } from '../services/organization.service';
 import { of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
-const LICENSE_FREE_ROUTES = new Set(['', '/', '/login', '/sso', '/license-pending']);
+const LICENSE_FREE_ROUTES = new Set(['', '/', '/login', '/sso', '/license-pending', '/account-not-activated']);
 const ALWAYS_ALLOWED_ROUTES = new Set(['/dashboard', '/settings']);
 
 export const authGuard: CanActivateFn = (route, state) => {
@@ -20,8 +20,9 @@ export const authGuard: CanActivateFn = (route, state) => {
 
   const routePath = '/' + state.url.split('/')[1].split('?')[0];
 
-  // License-pending page is always accessible to logged-in users
-  if (routePath === '/license-pending') {
+  // These two pages are always reachable regardless of activation state — otherwise
+  // a user with no personal activation could never even see the page explaining that.
+  if (routePath === '/license-pending' || routePath === '/account-not-activated') {
     return true;
   }
 
@@ -34,7 +35,17 @@ export const authGuard: CanActivateFn = (route, state) => {
   const accesspolicy = localStorage.getItem('accesspolicy');
   const licenseStatus = localStorage.getItem('licenseStatus');
 
+  let role = '';
+  try { role = JSON.parse(localStorage.getItem('crmUser') || '{}')?.role ?? ''; } catch { /* ignore */ }
+
   const checkRouteAccess = (features: string[]): boolean => {
+    // No personal activation at all, and not the one role that's exempt (SYSTEM_ADMIN
+    // with a real tenant entitlement) — block EVERYTHING, including dashboard/settings,
+    // and send them to the explanation screen instead of quietly showing an empty shell.
+    if (features.length === 0 && role !== 'SYSTEM_ADMIN') {
+      router.navigate(['/account-not-activated']);
+      return false;
+    }
     if (ALWAYS_ALLOWED_ROUTES.has(routePath) || LICENSE_FREE_ROUTES.has(routePath)) {
       return true;
     }

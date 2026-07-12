@@ -24,6 +24,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/license/license-pending').then(m => m.LicensePendingComponent),
     canActivate: [authGuard]
   },
+  {
+    path: 'account-not-activated',
+    loadComponent: () => import('./features/license/account-not-activated').then(m => m.AccountNotActivatedComponent),
+    canActivate: [authGuard]
+  },
 
   {
     path: '',
