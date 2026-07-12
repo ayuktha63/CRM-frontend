@@ -1,9 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth';
-import { AppConfigService } from '../../../core/services/app-config.service';
 
 @Component({
   selector: 'app-sso',
@@ -25,9 +23,7 @@ import { AppConfigService } from '../../../core/services/app-config.service';
 export class SsoComponent implements OnInit {
   private route  = inject(ActivatedRoute);
   private router = inject(Router);
-  private http   = inject(HttpClient);
   private auth   = inject(AuthService);
-  private readonly cfg = inject(AppConfigService);
 
   error = '';
 
@@ -37,23 +33,8 @@ export class SsoComponent implements OnInit {
       this.error = 'No SSO token provided.';
       return;
     }
-    this.http.post<any>(`${this.cfg.crmApiUrl}/api/v1/auth/sso`, { token }).subscribe({
-      next: (res) => {
-        // Always wipe stale license state from previous sessions before setting new tokens
-        localStorage.removeItem('licenseStatus');
-        localStorage.removeItem('accesspolicy');
-
-        localStorage.setItem('accessToken',  res.accessToken);
-        localStorage.setItem('refreshToken', res.refreshToken);
-        localStorage.setItem('crmUser', JSON.stringify({
-          name: res.username,
-          email: res.email,
-          role: res.role,
-          licenseWarning: res.licenseWarning ?? null,
-          tenantName: res.tenantName ?? null
-        }));
-        this.router.navigate(['/dashboard']);
-      },
+    this.auth.ssoLogin(token).subscribe({
+      next: () => this.router.navigate(['/dashboard']),
       error: (err) => {
         this.error = err?.error?.message || 'SSO login failed. Please try logging in manually.';
       }
