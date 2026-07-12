@@ -19,6 +19,7 @@ interface AuthResponse {
   licenseWarning?: string | null;
   tenantName?: string | null;
   organizationId?: string | null;
+  accessPolicy?: string[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -52,6 +53,12 @@ export class AuthService {
       tenantName: r.tenantName ?? null,
       organizationId: r.organizationId ?? null
     }));
+
+    // This is the per-user activation list OPAC computed at login (empty unless this
+    // specific user personally activated a license, or is SYSTEM_ADMIN) — the actual
+    // source of truth for what this user can see, separate from the tenant's org-wide
+    // license status.
+    localStorage.setItem('accesspolicy', JSON.stringify(r.accessPolicy ?? []));
   }
 
   getLicenseWarning(): string | null {

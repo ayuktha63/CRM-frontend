@@ -25,38 +25,44 @@ export const authGuard: CanActivateFn = (route, state) => {
     return true;
   }
 
-  // Check cached accesspolicy from localStorage first — avoids an API call on every navigation
+  // accesspolicy is the per-user activation list set once at LOGIN (OPAC's
+  // resolveUserCrmFeatures) and is never rewritten here — it's the one place that
+  // correctly distinguishes "this user personally activated a license" from "the
+  // tenant has some license". licenseStatus, by contrast, IS a tenant-wide concept
+  // (is the org's license active/expired at all) and is fine to lazily fetch/cache
+  // separately — the two must never be conflated or overwrite one another.
   const accesspolicy = localStorage.getItem('accesspolicy');
   const licenseStatus = localStorage.getItem('licenseStatus');
 
-  if (accesspolicy && licenseStatus) {
-    // No active license → redirect to license-pending
+  const checkRouteAccess = (features: string[]): boolean => {
+    if (ALWAYS_ALLOWED_ROUTES.has(routePath) || LICENSE_FREE_ROUTES.has(routePath)) {
+      return true;
+    }
+    if (features.length > 0 && !features.includes(routePath)) {
+      router.navigate(['/dashboard']);
+      return false;
+    }
+    return true;
+  };
+
+  const features: string[] = (() => {
+    if (!accesspolicy) return [];
+    try { return JSON.parse(accesspolicy) as string[]; } catch { return []; }
+  })();
+
+  if (licenseStatus) {
     if (licenseStatus !== 'ACTIVE' && licenseStatus !== 'GRACE') {
       router.navigate(['/license-pending']);
       return false;
     }
-    try {
-      const features = JSON.parse(accesspolicy) as string[];
-      if (ALWAYS_ALLOWED_ROUTES.has(routePath) || LICENSE_FREE_ROUTES.has(routePath)) {
-        return true;
-      }
-      if (features && features.length > 0) {
-        const isAllowed = features.includes(routePath);
-        if (!isAllowed) {
-          router.navigate(['/dashboard']);
-          return false;
-        }
-      }
-      return true;
-    } catch (e) { /* fall through to API call */ }
+    return checkRouteAccess(features);
   }
 
-  // No cached policy — fetch from license API once and cache for future navigations.
+  // licenseStatus not cached yet — fetch it once (tenant-wide, org license only).
+  // accesspolicy is NEVER set from this response; it stays whatever login set it to.
   return orgSvc.getMyLicenseStatus().pipe(
     map(status => {
-      const features = status?.features ?? [];
       const licStatus = status?.status ?? 'UNKNOWN';
-      localStorage.setItem('accesspolicy', JSON.stringify(features));
       localStorage.setItem('licenseStatus', String(licStatus));
 
       // SYSTEM_ADMIN (no org) — always allow through
@@ -64,23 +70,12 @@ export const authGuard: CanActivateFn = (route, state) => {
         return true;
       }
 
-      // License not active — send to license-pending page
       if (licStatus !== 'ACTIVE' && licStatus !== 'GRACE') {
         router.navigate(['/license-pending']);
         return false;
       }
 
-      if (ALWAYS_ALLOWED_ROUTES.has(routePath) || LICENSE_FREE_ROUTES.has(routePath)) {
-        return true;
-      }
-      if (features.length > 0) {
-        const isAllowed = features.includes(routePath);
-        if (!isAllowed) {
-          router.navigate(['/dashboard']);
-          return false;
-        }
-      }
-      return true;
+      return checkRouteAccess(features);
     }),
     catchError(() => of(true))
   );
