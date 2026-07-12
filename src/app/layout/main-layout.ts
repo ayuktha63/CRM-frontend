@@ -72,34 +72,26 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.loadNotifications();
 
-    // Always fetch fresh policy from the license API — ensures features reflect the
-    // current master license even after a re-login without a page reload.
+    // The per-user activation list is set at login time (OPAC's resolveUserCrmFeatures —
+    // empty unless THIS user personally activated a license, or is SYSTEM_ADMIN) and is
+    // the sole source of truth for what this user can see. It is NOT re-derived from the
+    // org-wide license status below — that endpoint reports the tenant's overall license
+    // (shared by everyone), and using it here would let any user in a licensed tenant see
+    // everything regardless of their own activation status.
+    const cached = localStorage.getItem('accesspolicy');
+    if (cached) {
+      try { this.allowedFeatures.set(JSON.parse(cached)); } catch { /* ignore */ }
+    }
+    this.featuresLoaded.set(true);
+
+    // Only used for the tenant-wide expired-license dialog — never for per-user access.
     this.orgSvc.getMyLicenseStatus().subscribe({
       next: status => {
         if (status?.status === 'EXPIRED') {
           this.showLicenseExpiredDialog.set(true);
         }
-        const features = status?.features ?? [];
-        if (features.length > 0) {
-          localStorage.setItem('accesspolicy', JSON.stringify(features));
-          this.allowedFeatures.set(features);
-        } else {
-          // No features from API — fall back to cached policy (e.g. system admin)
-          const cached = localStorage.getItem('accesspolicy');
-          if (cached) {
-            try { this.allowedFeatures.set(JSON.parse(cached)); } catch { /* ignore */ }
-          }
-        }
-        this.featuresLoaded.set(true);
       },
-      error: () => {
-        // API unavailable — use cached policy if present
-        const cached = localStorage.getItem('accesspolicy');
-        if (cached) {
-          try { this.allowedFeatures.set(JSON.parse(cached)); } catch { /* ignore */ }
-        }
-        this.featuresLoaded.set(true);
-      }
+      error: () => { /* dialog just won't show if this call fails */ }
     });
 
     this.connectNotificationStream();
@@ -373,9 +365,18 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     // Normalize paths: strip leading /crm/ prefix from legacy license keys
     const features = raw.map(f => f.startsWith('/crm/') ? f.replace('/crm/', '/') : f);
 
-    // If no features at all (SYSTEM_ADMIN / platform owner) — show everything
+    // Empty features means two very different things depending on WHO you are:
+    // for SYSTEM_ADMIN (platform-level, bypasses all org/license filters) it means
+    // "no personal activation needed — show everything". For anyone else, empty
+    // means they haven't personally activated a license yet — show nothing beyond
+    // the always-allowed routes, never "show everything" by default.
     if (features.length === 0) {
-      return base;
+      return this.currentUser()?.role === 'SYSTEM_ADMIN'
+        ? base
+        : base.map(group => ({
+            ...group,
+            items: group.items.filter(i => i.route === '/dashboard' || i.route === '/settings')
+          })).filter(g => g.items.length > 0);
     }
 
     return base.map(group => {
