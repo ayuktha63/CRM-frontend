@@ -765,7 +765,8 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
         break;
       }
 
-      case 'navigate': {
+      case 'navigate':
+      case 'edit': {
         if (uuid) this.router.navigate(['/', this.resource, uuid]);
         break;
       }
