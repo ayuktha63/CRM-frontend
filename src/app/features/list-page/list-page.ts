@@ -21,7 +21,6 @@ import {
   OToastService,
   CalendarWorkspaceComponent,
   CustomizationComponent,
-  DashboardBuilderComponent,
   EmailWorkspaceComponent,
   InventoryComponent,
   ReportBuilderComponent,
@@ -32,6 +31,7 @@ import {
 } from 'orque-ui';
 import { KanbanComponent } from './kanban';
 import { SysadminSettingsComponent } from '../system-admin/sysadmin-settings';
+import { CrmDashboardBuilderComponent } from '../crm-dashboard-builder/crm-dashboard-builder';
 import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { AppConfigService } from '../../core/services/app-config.service';
@@ -48,7 +48,7 @@ import { AuthService } from '../../core/services/auth';
     KanbanComponent,
     CalendarWorkspaceComponent,
     CustomizationComponent,
-    DashboardBuilderComponent,
+    CrmDashboardBuilderComponent,
     EmailWorkspaceComponent,
     InventoryComponent,
     ReportBuilderComponent,
@@ -101,7 +101,7 @@ import { AuthService } from '../../core/services/auth';
         <app-inventory></app-inventory>
       }
       @else if (resource === 'dashboard-builder') {
-        <app-dashboard-builder></app-dashboard-builder>
+        <app-crm-dashboard-builder></app-crm-dashboard-builder>
       }
       @else if (resource === 'user-settings') {
         @if (showLicenseSettings()) {
