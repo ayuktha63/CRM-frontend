@@ -1,11 +1,35 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { OStatCardComponent, PageStoreService } from 'orque-ui';
 import { DashboardService, SalesUserOption } from '../../core/services/dashboard.service';
+
+type CardType = 'kpi' | 'pipeline' | 'activity' | 'quick_actions' | 'email_stats';
+
+/** A card in a saved custom dashboard, keyed the same way the Dashboard Builder saves
+ *  it — reuses the exact same cards as the default dashboard below (kpi -> o-stat-card,
+ *  pipeline/activity/quick_actions/email_stats -> the same dash-card sections), just
+ *  picked/arranged differently. No bespoke widget UI. */
+interface CustomWidget {
+  key: string;
+  type: CardType;
+  title: string;
+}
+
+/** Order matches the this.kpis() array built in buildDashboard() below, so a saved
+ *  kpi card's live label/value/color/icon can be looked up by index. */
+const KPI_KEYS = ['revenue', 'pipelineValue', 'leads', 'contacts', 'tasks', 'campaigns'];
+
+/** Same fixed card catalog the Dashboard Builder offers — titles for the non-kpi cards. */
+const CARD_TITLES: Record<string, string> = {
+  pipeline: 'Deal Pipeline',
+  activity: 'Recent Activities',
+  quick_actions: 'Quick Actions',
+  email_stats: 'Email Performance',
+};
 
 interface KpiCard {
   label: string; value: string | number; sub: string;
@@ -41,10 +65,18 @@ interface QuickAction {
 export class DashboardComponent implements OnInit, OnDestroy {
   private readonly store = inject(PageStoreService);
   private readonly dashboardService = inject(DashboardService);
-  private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   loading = signal(true);
   dashboards = signal<any[]>([]);
+
+  // Collapses the header action row (filters/toggles/buttons) for a cleaner look.
+  actionsCollapsed = signal(false);
+
+  // Custom (saved) dashboard view — when set, the page renders these widgets in
+  // place instead of the default KPI/pipeline layout, no navigation involved.
+  activeCustomDashboard = signal<any | null>(null);
+  customWidgets = signal<CustomWidget[]>([]);
 
   // Admin user-picker
   salesUsers = signal<SalesUserOption[]>([]);
@@ -102,12 +134,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   activities   = signal<RecentActivity[]>([]);
   emailStats   = signal<{ label: string; value: string; pct: number; color: string }[]>([]);
 
+  // Ticks every minute so the greeting flips from "morning" to "afternoon" etc. live,
+  // instead of freezing at whatever it was when the page first loaded.
+  private readonly clockTick = signal(Date.now());
   greeting = computed(() => {
-    const h = new Date().getHours();
+    const h = new Date(this.clockTick()).getHours();
     if (h < 12) return 'Good morning';
     if (h < 17) return 'Good afternoon';
     return 'Good evening';
   });
+  private clockTimer: any = null;
 
   readonly quickActions: QuickAction[] = [
     { label: 'New Lead',     route: '/leads',     color: '#0F3460',
@@ -124,19 +160,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
       icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8' },
   ];
 
+  private static readonly VIEW_AS_KEY = 'crm_dashboard_view_as';
+
   ngOnInit(): void {
     this.loadWidgetSizes();
     if (this.isAdmin()) {
+      const savedViewAs = localStorage.getItem(DashboardComponent.VIEW_AS_KEY);
+      if (savedViewAs !== null) this.selectedUsername.set(savedViewAs);
       this.dashboardService.getSalesUsers().pipe(catchError(() => of([]))).subscribe(users => {
         this.salesUsers.set(users);
       });
     }
     this.loadDashboardData();
     this.loadCustomDashboards();
+    this.clockTimer = setInterval(() => this.clockTick.set(Date.now()), 60_000);
   }
 
   ngOnDestroy(): void {
     this.clearRefreshTimer();
+    if (this.clockTimer) clearInterval(this.clockTimer);
   }
 
   loadCustomDashboards() {
@@ -144,22 +186,60 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .pipe(catchError(() => of([])))
       .subscribe((list: any) => {
         this.dashboards.set(list || []);
+        const lastId = Number(localStorage.getItem('crm_last_dashboard_id'));
+        const toRestore = lastId ? (list || []).find((d: any) => d.id === lastId) : null;
+        if (toRestore) this.selectCustomDashboard(toRestore);
+        // Force the dashboard-switcher <select>'s [value] binding to sync now — this
+        // runs inside an async subscribe callback, so without this the DOM can lag
+        // behind activeCustomDashboard() until some unrelated change triggers detection.
+        this.cdr.detectChanges();
       });
   }
 
-  onDashboardSwitch(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    const value = target.value;
+  /** Bound to the switcher's ngModelChange (emits 'default' or the picked dashboard's id). */
+  onDashboardPicked(value: string | number): void {
     if (value === 'default') {
+      localStorage.removeItem('crm_last_dashboard_id');
+      this.activeCustomDashboard.set(null);
+      this.customWidgets.set([]);
       return;
     }
-    const dashboardId = Number(value);
-    localStorage.setItem('crm_last_dashboard_id', String(dashboardId));
-    this.router.navigate(['/dashboard-builder']);
+    const dash = this.dashboards().find((d: any) => d.id === Number(value));
+    if (dash) this.selectCustomDashboard(dash);
+  }
+
+  /** Selects a saved dashboard view in place and remembers it (crm_last_dashboard_id)
+   *  so a page refresh reopens the same view instead of resetting to Default. */
+  private selectCustomDashboard(dash: any): void {
+    localStorage.setItem('crm_last_dashboard_id', String(dash.id));
+    this.activeCustomDashboard.set(dash);
+    try {
+      const savedKeys: { key: string }[] = JSON.parse(dash.layoutConfig || '[]');
+      this.customWidgets.set(savedKeys.map(sw => this.toCustomWidget(sw.key)).filter((w): w is CustomWidget => !!w));
+    } catch {
+      this.customWidgets.set([]);
+    }
+  }
+
+  private toCustomWidget(key: string): CustomWidget | null {
+    if (KPI_KEYS.includes(key)) return { key, type: 'kpi', title: '' };
+    if (CARD_TITLES[key]) return { key, type: key as CardType, title: CARD_TITLES[key] };
+    return null;
+  }
+
+  /** Live label/value/color/icon for a saved kpi card, sourced from the same kpis()
+   *  signal the default KPI grid below renders — so the custom view always matches. */
+  getCustomKpi(key: string): KpiCard | undefined {
+    return this.kpis()[KPI_KEYS.indexOf(key)];
+  }
+
+  hasCustomKpis(): boolean {
+    return this.customWidgets().some(w => w.type === 'kpi');
   }
 
   onUserPickerChange(username: string): void {
     this.selectedUsername.set(username);
+    localStorage.setItem(DashboardComponent.VIEW_AS_KEY, username);
     this.loadDashboardData();
   }
 
