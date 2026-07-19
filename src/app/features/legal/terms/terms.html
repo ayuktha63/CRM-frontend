@@ -1,8 +1,16 @@
 <div class="legal-page">
-  <article class="legal-card">
-    <p class="legal-brand">Orque CRM</p>
+  <header class="legal-topbar">
+    <a class="legal-topbar-brand" routerLink="/login">Orque CRM</a>
+    <nav class="legal-topbar-nav" aria-label="Legal">
+      <a routerLink="/terms-of-service" class="is-active">Terms</a>
+      <a routerLink="/privacy-policy">Privacy</a>
+      <a routerLink="/login">Log in</a>
+    </nav>
+  </header>
+
+  <main class="legal-content">
     <h1 class="legal-title">Terms of Service</h1>
-    <p class="legal-updated">Last updated: July 20, 2026</p>
+    <p class="legal-updated">Last updated July 20, 2026</p>
 
     <div class="legal-body">
       <section>
@@ -25,6 +33,7 @@
           <li>Sales pipeline management (leads, contacts, accounts, deals)</li>
           <li>Quotes, invoices, products, and inventory</li>
           <li>Campaigns, email workspace, tasks, and calendar</li>
+          <li>Optional messaging integrations, including Meta WhatsApp Business Platform</li>
           <li>Reporting, dashboards, and customization tools</li>
           <li>Organization and system-admin management features</li>
         </ul>
@@ -62,6 +71,10 @@
           <li>Abuse APIs, integrations, or automated access beyond permitted use</li>
           <li>Upload unlawful, harmful, or infringing content</li>
           <li>Circumvent license, seat, or role restrictions</li>
+          <li>
+            Use Meta, WhatsApp, Google, or other integrations in violation of those providers’
+            terms, policies, or applicable messaging/spam laws
+          </li>
         </ul>
       </section>
 
@@ -71,17 +84,27 @@
           Your organization owns the business records it stores in Orque CRM (for example leads,
           contacts, deals, quotes, invoices, notes, and attachments). Orque provides the platform
           to host and process that data so you can use the Service. You are responsible for the
-          accuracy and lawfulness of data your users enter.
+          accuracy and lawfulness of data your users enter, and for obtaining any consents required
+          to message contacts (including WhatsApp recipients).
         </p>
       </section>
 
       <section>
-        <h2>7. Integrations</h2>
+        <h2>7. Third-Party Integrations (Meta, Google, and Others)</h2>
         <p>
-          The Service may offer optional integrations such as Google Gmail and Google Calendar
-          via OAuth. Connecting a third-party account is optional and under your (or your
-          organization’s) control. You are responsible for the permissions granted to connected
-          accounts and for complying with the third party’s terms.
+          The Service may offer optional integrations such as Meta WhatsApp Business Platform /
+          Meta APIs and Google Gmail / Google Calendar via OAuth. Connecting a third-party account
+          or business asset is optional and under your (or your organization’s) control.
+        </p>
+        <p>
+          When you use Meta products through the Service, you must also comply with Meta’s Platform
+          Terms, Developer Policies, and WhatsApp Business terms. You are responsible for the
+          permissions granted to connected accounts and for lawful use of messaging (including
+          opt-in, template approval, and recipient consent where required).
+        </p>
+        <p>
+          Our handling of personal and Platform Data is described in our
+          <a routerLink="/privacy-policy">Privacy Policy</a>, including how to request data deletion.
         </p>
       </section>
 
@@ -90,7 +113,8 @@
         <p>
           We may update, improve, or modify the Service, including features gated by license.
           We do not guarantee uninterrupted availability. Reasonable maintenance or operational
-          changes may occur without prior notice.
+          changes may occur without prior notice. Third-party APIs (including Meta and Google)
+          may change or become unavailable outside our control.
         </p>
       </section>
 
@@ -100,25 +124,27 @@
           To the fullest extent permitted by law, Orque and its operators are not liable for
           indirect, incidental, or consequential damages arising from use of the Service.
           Access may end when a license expires, is revoked, or when an account is deactivated
-          by an administrator or the platform operator.
+          by an administrator or the platform operator. Upon termination, data handling follows
+          our Privacy Policy and any applicable Meta Platform Data deletion obligations.
         </p>
       </section>
 
       <section>
         <h2>10. Contact</h2>
         <p>
-          For questions about these Terms, contact your organization’s administrator or the
-          Orque platform operator that licensed Orque CRM to your tenant.
-        </p>
-        <p>
-          See also our <a routerLink="/privacy-policy">Privacy Policy</a>.
+          For questions about these Terms, contact your organization’s administrator or email
+          <strong>privacy@orque.io</strong>. For privacy or data deletion requests, see our
+          <a routerLink="/privacy-policy">Privacy Policy</a>.
         </p>
       </section>
     </div>
+  </main>
 
-    <footer class="legal-footer">
-      <a routerLink="/login">Back to login</a>
-      <a routerLink="/privacy-policy">Privacy Policy</a>
-    </footer>
-  </article>
+  <footer class="legal-site-footer">
+    <a routerLink="/login">Log in</a>
+    <span class="legal-footer-sep" aria-hidden="true">·</span>
+    <a routerLink="/privacy-policy">Privacy Policy</a>
+    <span class="legal-footer-sep" aria-hidden="true">·</span>
+    <span>Orque CRM</span>
+  </footer>
 </div>
