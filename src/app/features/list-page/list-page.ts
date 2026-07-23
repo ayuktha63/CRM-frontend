@@ -27,7 +27,9 @@ import {
   ReportsComponent,
   UserSettingsComponent,
   PageStoreService,
-  FormDrawerComponent
+  FormDrawerComponent,
+  ConfirmationDialogComponent,
+  ConfirmationDialogType
 } from 'orque-ui';
 import { KanbanComponent } from './kanban';
 import { SysadminSettingsComponent } from '../system-admin/sysadmin-settings';
@@ -54,7 +56,8 @@ import { AuthService } from '../../core/services/auth';
     ReportBuilderComponent,
     ReportsComponent,
     UserSettingsComponent,
-    SysadminSettingsComponent
+    SysadminSettingsComponent,
+    ConfirmationDialogComponent
   ],
   template: `
     <div class="lp-container">
@@ -344,6 +347,17 @@ import { AuthService } from '../../core/services/auth';
         </div>
       </div>
     }
+
+    <o-confirmation-dialog
+      [open]="!!confirmState()"
+      [title]="confirmState()?.title || 'Confirm'"
+      [message]="confirmState()?.message || ''"
+      [confirmLabel]="confirmState()?.confirmLabel || 'Confirm'"
+      [cancelLabel]="'Cancel'"
+      [type]="confirmState()?.type || 'warning'"
+      (confirmed)="onConfirmDialogConfirm()"
+      (cancelled)="onConfirmDialogCancel()"
+    />
   `,
   styles: [`
     :host { display: block; height: 100%; }
@@ -656,6 +670,35 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly toast = inject(OToastService);
 
+  // In-app confirmation dialog (replaces window.confirm)
+  confirmState = signal<{
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    type?: ConfirmationDialogType;
+    onConfirm: () => void;
+  } | null>(null);
+
+  private askConfirm(message: string, onConfirm: () => void, opts?: { title?: string; confirmLabel?: string; type?: ConfirmationDialogType }): void {
+    this.confirmState.set({
+      title: opts?.title || 'Please Confirm',
+      message,
+      confirmLabel: opts?.confirmLabel,
+      type: opts?.type || 'warning',
+      onConfirm
+    });
+  }
+
+  onConfirmDialogConfirm(): void {
+    const state = this.confirmState();
+    this.confirmState.set(null);
+    state?.onConfirm();
+  }
+
+  onConfirmDialogCancel(): void {
+    this.confirmState.set(null);
+  }
+
   constructor() {}
 
   private resetState(): void {
@@ -908,15 +951,16 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
       }
 
       case 'terminate-all': {
-        if (!confirm('Terminate all other active sessions?')) return;
-        const sub = this.store.delete(`${base}/terminate-all`).subscribe({
-          next: () => {
-            this.toast.addSuccess('Done', 'All other sessions terminated.');
-            this.loadData(this.page!.api);
-          },
-          error: (err) => this.showError(`Terminate all failed: ${err?.error?.message || err.message}`)
-        });
-        this._subs.add(sub);
+        this.askConfirm('Terminate all other active sessions?', () => {
+          const sub = this.store.delete(`${base}/terminate-all`).subscribe({
+            next: () => {
+              this.toast.addSuccess('Done', 'All other sessions terminated.');
+              this.loadData(this.page!.api);
+            },
+            error: (err) => this.showError(`Terminate all failed: ${err?.error?.message || err.message}`)
+          });
+          this._subs.add(sub);
+        }, { title: 'Terminate Sessions', confirmLabel: 'Terminate' });
         break;
       }
 
@@ -942,15 +986,16 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
       }
 
       case 'delete': {
-        if (!confirm(`Delete "${label}"? This cannot be undone.`)) return;
-        const sub = this.store.delete(`${base}/${uuid}`).subscribe({
-          next: () => {
-            this.toast.addSuccess('Deleted', `${label} deleted.`);
-            this.loadData(this.page!.api);
-          },
-          error: (err) => this.showError(`Delete failed: ${err?.error?.message || err.message}`)
-        });
-        this._subs.add(sub);
+        this.askConfirm(`Delete "${label}"? This cannot be undone.`, () => {
+          const sub = this.store.delete(`${base}/${uuid}`).subscribe({
+            next: () => {
+              this.toast.addSuccess('Deleted', `${label} deleted.`);
+              this.loadData(this.page!.api);
+            },
+            error: (err) => this.showError(`Delete failed: ${err?.error?.message || err.message}`)
+          });
+          this._subs.add(sub);
+        }, { title: 'Delete Record', confirmLabel: 'Delete', type: 'danger' });
         break;
       }
 
@@ -1392,20 +1437,25 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   bulkDeleteSelected() {
-    if (!confirm(`Are you sure you want to delete these ${this.selectedBulkRows.length} records?`)) return;
-    const ids = this.selectedBulkRows.map(r => r.id);
-    this.http.post<any>(`${this.base}/api/v1/bulk/delete?module=${this.resource}`, ids, { headers: this.hdrs() })
-      .subscribe({
-        next: () => {
-          alert('Bulk delete completed.');
-          this.selectedBulkRows = [];
-          if (this.page) {
-            this.loadData(this.page.api);
-          }
-          this.cdr.detectChanges();
-        },
-        error: err => alert(err?.error?.message || 'Bulk delete failed.')
-      });
+    this.askConfirm(
+      `Are you sure you want to delete these ${this.selectedBulkRows.length} records?`,
+      () => {
+        const ids = this.selectedBulkRows.map(r => r.id);
+        this.http.post<any>(`${this.base}/api/v1/bulk/delete?module=${this.resource}`, ids, { headers: this.hdrs() })
+          .subscribe({
+            next: () => {
+              this.toast.addSuccess('Deleted', 'Bulk delete completed.');
+              this.selectedBulkRows = [];
+              if (this.page) {
+                this.loadData(this.page.api);
+              }
+              this.cdr.detectChanges();
+            },
+            error: err => this.toast.addError('Bulk Delete Failed', err?.error?.message || 'Bulk delete failed.')
+          });
+      },
+      { title: 'Delete Records', confirmLabel: 'Delete', type: 'danger' }
+    );
   }
 
   submitBulkAction() {
@@ -1413,13 +1463,13 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
 
     let url = `${this.base}/api/v1/bulk/`;
     if (this.bulkActionType === 'edit') {
-      if (!this.bulkEditField) return alert('Choose field.');
+      if (!this.bulkEditField) { this.toast.addWarning('Missing Field', 'Choose field.'); return; }
       url += `edit?module=${this.resource}&fieldName=${this.bulkEditField}&fieldValue=${encodeURIComponent(this.bulkEditValue)}`;
     } else if (this.bulkActionType === 'assign') {
-      if (!this.bulkAssignOwner) return alert('Choose owner.');
+      if (!this.bulkAssignOwner) { this.toast.addWarning('Missing Owner', 'Choose owner.'); return; }
       url += `assign?module=${this.resource}&owner=${this.bulkAssignOwner}`;
     } else if (this.bulkActionType === 'status') {
-      if (!this.bulkStatusValue) return alert('Choose status.');
+      if (!this.bulkStatusValue) { this.toast.addWarning('Missing Status', 'Choose status.'); return; }
       url += `status?module=${this.resource}&status=${this.bulkStatusValue}`;
     } else {
       return;
@@ -1427,7 +1477,7 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
 
     this.http.post<any>(url, ids, { headers: this.hdrs() }).subscribe({
       next: () => {
-        alert('Bulk operation completed successfully.');
+        this.toast.addSuccess('Done', 'Bulk operation completed successfully.');
         this.bulkActionDrawerOpen = false;
         this.selectedBulkRows = [];
         if (this.page) {
@@ -1435,7 +1485,7 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
         }
         this.cdr.detectChanges();
       },
-      error: err => alert(err?.error?.message || 'Bulk action failed.')
+      error: err => this.toast.addError('Bulk Action Failed', err?.error?.message || 'Bulk action failed.')
     });
   }
 
