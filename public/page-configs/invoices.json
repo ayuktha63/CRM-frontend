@@ -180,7 +180,8 @@
           "type": "select",
           "colSpan": "col-1",
           "placeholder": "For GST: same-state vs different-state tax",
-          "optionsUrl": "/customer-states.json"
+          "optionsUrl": "/customer-states.json",
+          "optionsScopedByTaxCountry": true
         },
         {
           "name": "dueDate",
