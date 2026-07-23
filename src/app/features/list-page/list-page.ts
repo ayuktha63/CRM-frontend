@@ -348,6 +348,59 @@ import { AuthService } from '../../core/services/auth';
       </div>
     }
 
+    <!-- Deal's generated invoices popup -->
+    @if (dealInvoicesOpen()) {
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:3000;padding:24px;"
+           (click)="closeDealInvoicesPopup()">
+        <div style="background:var(--crm-card);border:1px solid var(--crm-border);border-radius:16px;width:100%;max-width:560px;max-height:80vh;box-shadow:0 25px 50px -12px rgba(0,0,0,0.2);display:flex;flex-direction:column;overflow:hidden;"
+             (click)="$event.stopPropagation()">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--crm-border);">
+            <h2 style="font-size:1.05rem;font-weight:700;color:var(--crm-text-1);margin:0;">Invoices for {{ dealInvoicesDealLabel() }}</h2>
+            <button (click)="closeDealInvoicesPopup()" aria-label="Close"
+                    style="width:30px;height:30px;border-radius:8px;border:none;background:none;color:var(--crm-text-3);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div style="padding:16px 24px;overflow-y:auto;">
+            @if (dealInvoicesLoading()) {
+              <p style="font-size:0.85rem;color:var(--crm-text-2);margin:0;">Loading…</p>
+            } @else if (dealInvoicesList().length === 0) {
+              <p style="font-size:0.85rem;color:var(--crm-text-2);margin:0;">No invoices have been generated from this deal yet.</p>
+            } @else {
+              <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+                <thead>
+                  <tr style="text-align:left;color:var(--crm-text-2);border-bottom:1px solid var(--crm-border);">
+                    <th style="padding:8px 6px;font-weight:600;">Invoice #</th>
+                    <th style="padding:8px 6px;font-weight:600;">Amount</th>
+                    <th style="padding:8px 6px;font-weight:600;">Due Date</th>
+                    <th style="padding:8px 6px;font-weight:600;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (inv of dealInvoicesList(); track inv.id) {
+                    <tr style="border-bottom:1px solid var(--crm-border);">
+                      <td style="padding:8px 6px;color:var(--crm-text-1);font-weight:600;">{{ inv.invoiceNumber }}</td>
+                      <td style="padding:8px 6px;color:var(--crm-text-1);">₹{{ inv.amount }}</td>
+                      <td style="padding:8px 6px;color:var(--crm-text-2);">{{ inv.dueDate }}</td>
+                      <td style="padding:8px 6px;color:var(--crm-text-2);">{{ inv.status }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid var(--crm-border);">
+            <button (click)="closeDealInvoicesPopup()"
+                    style="padding:7px 16px;border:1px solid var(--crm-border);border-radius:8px;background:none;font-size:0.8rem;font-weight:600;color:var(--crm-text-2);cursor:pointer;">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
     <o-confirmation-dialog
       [open]="!!confirmState()"
       [title]="confirmState()?.title || 'Confirm'"
@@ -553,6 +606,15 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
   resetPasswordValue = signal('');
   resetPasswordSubmitting = signal(false);
   resetPasswordError = signal('');
+
+  dealInvoicesOpen = signal(false);
+  dealInvoicesLoading = signal(false);
+  dealInvoicesList = signal<any[]>([]);
+  dealInvoicesDealLabel = signal('');
+
+  closeDealInvoicesPopup(): void {
+    this.dealInvoicesOpen.set(false);
+  }
 
   get resetPasswordValueModel(): string { return this.resetPasswordValue(); }
   set resetPasswordValueModel(v: string) { this.resetPasswordValue.set(v); }
@@ -972,6 +1034,25 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
           });
           this._subs.add(sub);
         }, { title: 'Terminate Sessions', confirmLabel: 'Terminate' });
+        break;
+      }
+
+      case 'view-invoices': {
+        this.dealInvoicesDealLabel.set(label);
+        this.dealInvoicesOpen.set(true);
+        this.dealInvoicesLoading.set(true);
+        this.dealInvoicesList.set([]);
+        const sub = this.store.getList(`${base}/${uuid}/invoices`).subscribe({
+          next: (data) => {
+            this.dealInvoicesList.set(data || []);
+            this.dealInvoicesLoading.set(false);
+          },
+          error: (err) => {
+            this.dealInvoicesLoading.set(false);
+            this.showError(`Failed to load invoices: ${err?.error?.message || err.message}`);
+          }
+        });
+        this._subs.add(sub);
         break;
       }
 
