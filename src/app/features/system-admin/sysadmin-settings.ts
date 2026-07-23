@@ -304,7 +304,12 @@ interface TaxCountry {
                   <span>Business State</span>
                   <span class="setting-desc">Your own registered state — compared against each customer's state to decide CGST/SGST vs IGST</span>
                 </div>
-                <input class="setting-input" type="text" [(ngModel)]="taxForm.businessState" placeholder="e.g. Kerala" />
+                <select class="setting-input" [(ngModel)]="taxForm.businessState">
+                  <option value="">-- Select State --</option>
+                  @for (s of indianStates; track s) {
+                    <option [value]="s">{{ s }}</option>
+                  }
+                </select>
               </div>
               }
             </div>
@@ -757,6 +762,19 @@ export class SysadminSettingsComponent implements OnInit {
     countryCode: '', countryName: '', taxSystem: '', registrationLabel: '',
     registrationNumber: '', businessState: '', requiresBusinessState: false, configJson: ''
   };
+
+  /** Canonical Indian states/UTs — kept identical to the customerState options in
+   * quotes.json/invoices.json so businessState and customerState can only ever match
+   * on an exact, typo-free value, instead of two independently free-typed text fields. */
+  readonly indianStates: string[] = [
+    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat',
+    'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh',
+    'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+    'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh',
+    'Uttarakhand', 'West Bengal', 'Andaman and Nicobar Islands', 'Chandigarh',
+    'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Jammu and Kashmir',
+    'Ladakh', 'Lakshadweep', 'Puducherry'
+  ];
 
   selectedCountry = signal<TaxCountry | null>(null);
 
