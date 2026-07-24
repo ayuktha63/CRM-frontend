@@ -28,7 +28,9 @@ import {
   ReportsComponent,
   UserSettingsComponent,
   PageStoreService,
-  FormDrawerComponent
+  FormDrawerComponent,
+  ConfirmationDialogComponent,
+  ConfirmationDialogType
 } from 'orque-ui';
 import { KanbanComponent } from './kanban';
 import { SysadminSettingsComponent } from '../system-admin/sysadmin-settings';
@@ -54,7 +56,8 @@ import { AuthService } from '../../core/services/auth';
     ReportBuilderComponent,
     ReportsComponent,
     UserSettingsComponent,
-    SysadminSettingsComponent
+    SysadminSettingsComponent,
+    ConfirmationDialogComponent
   ],
   template: `
     <div class="lp-container">
@@ -185,7 +188,7 @@ import { AuthService } from '../../core/services/auth';
               <button class="pdf-bar-action-btn pdf-btn-secondary" (click)="openBulkEditDrawer()" style="background: rgba(15, 52, 96, 0.1); border: 1px solid rgba(15, 52, 96, 0.3); color: var(--crm-primary);">
                 Bulk Edit
               </button>
-              <button class="pdf-bar-action-btn pdf-btn-secondary" (click)="openBulkAssignDrawer()" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #D97706;" *ngIf="auth.getRole() === 'SYSTEM_ADMIN'">
+              <button class="pdf-bar-action-btn pdf-btn-secondary" (click)="openBulkAssignDrawer()" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #D97706;" *ngIf="(auth.getRole() === 'SYSTEM_ADMIN' || auth.getRole() === 'ADMIN') && resource !== 'contacts' && resource !== 'accounts' && resource !== 'deals'">
                 Bulk Assign
               </button>
               <button class="pdf-bar-action-btn pdf-btn-secondary" (click)="openBulkStatusDrawer()" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #059669;" *ngIf="resource === 'leads' || resource === 'deals' || resource === 'accounts'">
@@ -344,6 +347,70 @@ import { AuthService } from '../../core/services/auth';
         </div>
       </div>
     }
+
+    <!-- Deal's generated invoices popup -->
+    @if (dealInvoicesOpen()) {
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:3000;padding:24px;"
+           (click)="closeDealInvoicesPopup()">
+        <div style="background:var(--crm-card);border:1px solid var(--crm-border);border-radius:16px;width:100%;max-width:560px;max-height:80vh;box-shadow:0 25px 50px -12px rgba(0,0,0,0.2);display:flex;flex-direction:column;overflow:hidden;"
+             (click)="$event.stopPropagation()">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--crm-border);">
+            <h2 style="font-size:1.05rem;font-weight:700;color:var(--crm-text-1);margin:0;">Invoices for {{ dealInvoicesDealLabel() }}</h2>
+            <button (click)="closeDealInvoicesPopup()" aria-label="Close"
+                    style="width:30px;height:30px;border-radius:8px;border:none;background:none;color:var(--crm-text-3);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div style="padding:16px 24px;overflow-y:auto;">
+            @if (dealInvoicesLoading()) {
+              <p style="font-size:0.85rem;color:var(--crm-text-2);margin:0;">Loading…</p>
+            } @else if (dealInvoicesList().length === 0) {
+              <p style="font-size:0.85rem;color:var(--crm-text-2);margin:0;">No invoices have been generated from this deal yet.</p>
+            } @else {
+              <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+                <thead>
+                  <tr style="text-align:left;color:var(--crm-text-2);border-bottom:1px solid var(--crm-border);">
+                    <th style="padding:8px 6px;font-weight:600;">Invoice #</th>
+                    <th style="padding:8px 6px;font-weight:600;">Amount</th>
+                    <th style="padding:8px 6px;font-weight:600;">Due Date</th>
+                    <th style="padding:8px 6px;font-weight:600;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (inv of dealInvoicesList(); track inv.id) {
+                    <tr style="border-bottom:1px solid var(--crm-border);">
+                      <td style="padding:8px 6px;color:var(--crm-text-1);font-weight:600;">{{ inv.invoiceNumber }}</td>
+                      <td style="padding:8px 6px;color:var(--crm-text-1);">₹{{ inv.amount }}</td>
+                      <td style="padding:8px 6px;color:var(--crm-text-2);">{{ inv.dueDate }}</td>
+                      <td style="padding:8px 6px;color:var(--crm-text-2);">{{ inv.status }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid var(--crm-border);">
+            <button (click)="closeDealInvoicesPopup()"
+                    style="padding:7px 16px;border:1px solid var(--crm-border);border-radius:8px;background:none;font-size:0.8rem;font-weight:600;color:var(--crm-text-2);cursor:pointer;">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <o-confirmation-dialog
+      [open]="!!confirmState()"
+      [title]="confirmState()?.title || 'Confirm'"
+      [message]="confirmState()?.message || ''"
+      [confirmLabel]="confirmState()?.confirmLabel || 'Confirm'"
+      [cancelLabel]="'Cancel'"
+      [type]="confirmState()?.type || 'warning'"
+      (confirmed)="onConfirmDialogConfirm()"
+      (cancelled)="onConfirmDialogCancel()"
+    />
   `,
   styles: [`
     :host { display: block; height: 100%; }
@@ -540,6 +607,15 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
   resetPasswordSubmitting = signal(false);
   resetPasswordError = signal('');
 
+  dealInvoicesOpen = signal(false);
+  dealInvoicesLoading = signal(false);
+  dealInvoicesList = signal<any[]>([]);
+  dealInvoicesDealLabel = signal('');
+
+  closeDealInvoicesPopup(): void {
+    this.dealInvoicesOpen.set(false);
+  }
+
   get resetPasswordValueModel(): string { return this.resetPasswordValue(); }
   set resetPasswordValueModel(v: string) { this.resetPasswordValue.set(v); }
 
@@ -656,6 +732,35 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly toast = inject(OToastService);
 
+  // In-app confirmation dialog (replaces window.confirm)
+  confirmState = signal<{
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    type?: ConfirmationDialogType;
+    onConfirm: () => void;
+  } | null>(null);
+
+  private askConfirm(message: string, onConfirm: () => void, opts?: { title?: string; confirmLabel?: string; type?: ConfirmationDialogType }): void {
+    this.confirmState.set({
+      title: opts?.title || 'Please Confirm',
+      message,
+      confirmLabel: opts?.confirmLabel,
+      type: opts?.type || 'warning',
+      onConfirm
+    });
+  }
+
+  onConfirmDialogConfirm(): void {
+    const state = this.confirmState();
+    this.confirmState.set(null);
+    state?.onConfirm();
+  }
+
+  onConfirmDialogCancel(): void {
+    this.confirmState.set(null);
+  }
+
   constructor() {}
 
   private resetState(): void {
@@ -753,6 +858,17 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
     const sub = this.store.getList(api).subscribe({
       next: (rows) => {
         this.data = rows ?? [];
+        // selectedRow/previewRecord hold a reference into the *previous* data array;
+        // resync them to the freshly fetched row so any status/field change made via
+        // an action (e.g. "Send" on a quote) is reflected wherever that record is
+        // still being displayed (preview panel, floating action bar), instead of
+        // showing the pre-action snapshot until the row is reselected.
+        if (this.selectedRow) {
+          this.selectedRow = this.data.find(r => r.id === this.selectedRow.id) ?? null;
+        }
+        if (this.previewRecord) {
+          this.previewRecord = this.data.find(r => r.id === this.previewRecord.id) ?? null;
+        }
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -908,13 +1024,33 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
       }
 
       case 'terminate-all': {
-        if (!confirm('Terminate all other active sessions?')) return;
-        const sub = this.store.delete(`${base}/terminate-all`).subscribe({
-          next: () => {
-            this.toast.addSuccess('Done', 'All other sessions terminated.');
-            this.loadData(this.page!.api);
+        this.askConfirm('Terminate all other active sessions?', () => {
+          const sub = this.store.delete(`${base}/terminate-all`).subscribe({
+            next: () => {
+              this.toast.addSuccess('Done', 'All other sessions terminated.');
+              this.loadData(this.page!.api);
+            },
+            error: (err) => this.showError(`Terminate all failed: ${err?.error?.message || err.message}`)
+          });
+          this._subs.add(sub);
+        }, { title: 'Terminate Sessions', confirmLabel: 'Terminate' });
+        break;
+      }
+
+      case 'view-invoices': {
+        this.dealInvoicesDealLabel.set(label);
+        this.dealInvoicesOpen.set(true);
+        this.dealInvoicesLoading.set(true);
+        this.dealInvoicesList.set([]);
+        const sub = this.store.getList(`${base}/${uuid}/invoices`).subscribe({
+          next: (data) => {
+            this.dealInvoicesList.set(data || []);
+            this.dealInvoicesLoading.set(false);
           },
-          error: (err) => this.showError(`Terminate all failed: ${err?.error?.message || err.message}`)
+          error: (err) => {
+            this.dealInvoicesLoading.set(false);
+            this.showError(`Failed to load invoices: ${err?.error?.message || err.message}`);
+          }
         });
         this._subs.add(sub);
         break;
@@ -942,15 +1078,16 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
       }
 
       case 'delete': {
-        if (!confirm(`Delete "${label}"? This cannot be undone.`)) return;
-        const sub = this.store.delete(`${base}/${uuid}`).subscribe({
-          next: () => {
-            this.toast.addSuccess('Deleted', `${label} deleted.`);
-            this.loadData(this.page!.api);
-          },
-          error: (err) => this.showError(`Delete failed: ${err?.error?.message || err.message}`)
-        });
-        this._subs.add(sub);
+        this.askConfirm(`Delete "${label}"? This cannot be undone.`, () => {
+          const sub = this.store.delete(`${base}/${uuid}`).subscribe({
+            next: () => {
+              this.toast.addSuccess('Deleted', `${label} deleted.`);
+              this.loadData(this.page!.api);
+            },
+            error: (err) => this.showError(`Delete failed: ${err?.error?.message || err.message}`)
+          });
+          this._subs.add(sub);
+        }, { title: 'Delete Record', confirmLabel: 'Delete', type: 'danger' });
         break;
       }
 
@@ -1392,20 +1529,25 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   bulkDeleteSelected() {
-    if (!confirm(`Are you sure you want to delete these ${this.selectedBulkRows.length} records?`)) return;
-    const ids = this.selectedBulkRows.map(r => r.id);
-    this.http.post<any>(`${this.base}/api/v1/bulk/delete?module=${this.resource}`, ids, { headers: this.hdrs() })
-      .subscribe({
-        next: () => {
-          alert('Bulk delete completed.');
-          this.selectedBulkRows = [];
-          if (this.page) {
-            this.loadData(this.page.api);
-          }
-          this.cdr.detectChanges();
-        },
-        error: err => alert(err?.error?.message || 'Bulk delete failed.')
-      });
+    this.askConfirm(
+      `Are you sure you want to delete these ${this.selectedBulkRows.length} records?`,
+      () => {
+        const ids = this.selectedBulkRows.map(r => r.id);
+        this.http.post<any>(`${this.base}/api/v1/bulk/delete?module=${this.resource}`, ids, { headers: this.hdrs() })
+          .subscribe({
+            next: () => {
+              this.toast.addSuccess('Deleted', 'Bulk delete completed.');
+              this.selectedBulkRows = [];
+              if (this.page) {
+                this.loadData(this.page.api);
+              }
+              this.cdr.detectChanges();
+            },
+            error: err => this.toast.addError('Bulk Delete Failed', err?.error?.message || 'Bulk delete failed.')
+          });
+      },
+      { title: 'Delete Records', confirmLabel: 'Delete', type: 'danger' }
+    );
   }
 
   submitBulkAction() {
@@ -1413,13 +1555,13 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
 
     let url = `${this.base}/api/v1/bulk/`;
     if (this.bulkActionType === 'edit') {
-      if (!this.bulkEditField) return alert('Choose field.');
+      if (!this.bulkEditField) { this.toast.addWarning('Missing Field', 'Choose field.'); return; }
       url += `edit?module=${this.resource}&fieldName=${this.bulkEditField}&fieldValue=${encodeURIComponent(this.bulkEditValue)}`;
     } else if (this.bulkActionType === 'assign') {
-      if (!this.bulkAssignOwner) return alert('Choose owner.');
+      if (!this.bulkAssignOwner) { this.toast.addWarning('Missing Owner', 'Choose owner.'); return; }
       url += `assign?module=${this.resource}&owner=${this.bulkAssignOwner}`;
     } else if (this.bulkActionType === 'status') {
-      if (!this.bulkStatusValue) return alert('Choose status.');
+      if (!this.bulkStatusValue) { this.toast.addWarning('Missing Status', 'Choose status.'); return; }
       url += `status?module=${this.resource}&status=${this.bulkStatusValue}`;
     } else {
       return;
@@ -1427,7 +1569,7 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
 
     this.http.post<any>(url, ids, { headers: this.hdrs() }).subscribe({
       next: () => {
-        alert('Bulk operation completed successfully.');
+        this.toast.addSuccess('Done', 'Bulk operation completed successfully.');
         this.bulkActionDrawerOpen = false;
         this.selectedBulkRows = [];
         if (this.page) {
@@ -1435,7 +1577,7 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
         }
         this.cdr.detectChanges();
       },
-      error: err => alert(err?.error?.message || 'Bulk action failed.')
+      error: err => this.toast.addError('Bulk Action Failed', err?.error?.message || 'Bulk action failed.')
     });
   }
 

@@ -107,6 +107,15 @@
       "isHeaderView": true,
       "pipe": "status",
       "width": "12rem"
+    },
+    {
+      "name": "invoices",
+      "label": "Invoices",
+      "isHeaderView": true,
+      "pipe": "link",
+      "linkAction": "view-invoices",
+      "linkLabel": "View",
+      "width": "8rem"
     }
   ],
   "tableTool": {
