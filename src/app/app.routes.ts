@@ -79,13 +79,13 @@ export const routes: Routes = [
       {
         path: 'contacts/:id',
         loadComponent: () =>
-          import('orque-ui').then(m => m.RecordDetailComponent),
+          import('./features/record-detail/record-detail-wrapper').then(m => m.RecordDetailWrapperComponent),
         data: { resource: 'contacts' }
       },
       {
         path: 'accounts/:id',
         loadComponent: () =>
-          import('orque-ui').then(m => m.RecordDetailComponent),
+          import('./features/record-detail/record-detail-wrapper').then(m => m.RecordDetailWrapperComponent),
         data: { resource: 'accounts' }
       },
       {
