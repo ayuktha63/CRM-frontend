@@ -108,7 +108,7 @@ export const routes: Routes = [
         path: 'tasks',
         loadComponent: () =>
           import('./features/list-page/list-page').then(m => m.ListPageComponent),
-        data: { resource: 'tasks' }
+        data: { resource: 'google-tasks' }
       },
       {
         path: 'calendar',
