@@ -4,12 +4,16 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth';
 import { AppConfigService } from '../../core/services/app-config.service';
+import { OToastService } from 'orque-ui';
 
-interface GoogleCalendarStatus {
+interface GoogleWorkspaceStatus {
   connected: boolean;
-  googleEmail?: string;
-  syncEnabled?: boolean;
-  lastSyncedAt?: string;
+  email?: string;
+  needsReconnect?: boolean;
+  connectedAt?: string;
+  lastTokenRefreshAt?: string;
+  lastApiSuccessAt?: string;
+  services?: { gmail?: boolean; calendar?: boolean; meet?: boolean; tasks?: boolean };
 }
 
 interface TaxCountry {
@@ -73,14 +77,11 @@ interface TaxCountry {
             </svg>
             Notifications
           </button>
-          <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'calendar'" (click)="setSection('calendar')">
+          <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'integrations'" (click)="setSection('integrations')">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
+              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
-            Calendar Sync
+            Integrations
           </button>
         </aside>
 
@@ -304,7 +305,22 @@ interface TaxCountry {
                   <span>Business State</span>
                   <span class="setting-desc">Your own registered state — compared against each customer's state to decide CGST/SGST vs IGST</span>
                 </div>
-                <input class="setting-input" type="text" [(ngModel)]="taxForm.businessState" placeholder="e.g. Kerala" />
+                <select class="setting-input" [(ngModel)]="taxForm.businessState">
+                  <option value="">-- Select State --</option>
+                  @for (s of indianStates; track s) {
+                    <option [value]="s">{{ s }}</option>
+                  }
+                </select>
+              </div>
+              }
+
+              @if (selectedCountry()) {
+              <div class="setting-item">
+                <div class="setting-label">
+                  <span>Tax Percentage</span>
+                  <span class="setting-desc">Configured rate(s) for {{ selectedCountry()?.countryName }} — sourced from the tax master, read-only</span>
+                </div>
+                <input class="setting-input" type="text" [value]="taxRateSummary" readonly disabled />
               </div>
               }
             </div>
@@ -465,49 +481,83 @@ interface TaxCountry {
           </div>
           }
 
-          <!-- ── Calendar Sync ── -->
-          @if (activeSection() === 'calendar') {
+          <!-- ── Integrations: Google Workspace (single connection) ── -->
+          @if (activeSection() === 'integrations') {
           <div class="settings-card">
-            <h2 class="settings-section-title">Calendar Sync Integration</h2>
-            <p class="settings-section-desc">Connect your own Google account to sync your CRM meetings and tasks both ways with Google Calendar.</p>
+            <h2 class="settings-section-title">Google Workspace</h2>
+            <p class="settings-section-desc">
+              Connect your Google account once to automatically integrate Gmail, Calendar, Google Meet, and Google Tasks —
+              no separate connection needed for each service.
+            </p>
 
-            <div class="google-cal-card">
-              <div class="google-cal-info">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="16" y1="2" x2="16" y2="6"/>
-                  <line x1="8" y1="2" x2="8" y2="6"/>
-                  <line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-                <div>
-                  @if (!loadingGoogleStatus()) {
-                    @if (googleCalendarStatus().connected) {
-                      <strong>Connected</strong> — {{ googleCalendarStatus().googleEmail }}
-                      @if (googleCalendarStatus().lastSyncedAt) {
-                        <div class="google-cal-sub">Last synced {{ formatDate(googleCalendarStatus().lastSyncedAt) }}</div>
+            @if (!loadingGoogleStatus()) {
+              @if (googleStatus().connected) {
+                <div class="google-cal-card">
+                  <div class="google-cal-info">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z"/><path d="m8 12 3 3 5-6"/>
+                    </svg>
+                    <div>
+                      <strong class="status-dot status-dot--connected">🟢 Connected</strong>
+                      <div class="google-cal-sub">{{ googleStatus().email }}</div>
+                      @if (googleStatus().lastApiSuccessAt) {
+                        <div class="google-cal-sub">Last successful API call {{ formatDate(googleStatus().lastApiSuccessAt) }}</div>
                       }
-                    } @else {
-                      <strong>Not connected</strong>
-                      <div class="google-cal-sub">Connect your own Google account to sync events both ways.</div>
-                    }
-                  } @else {
-                    <span>Checking connection status…</span>
+                      @if (googleStatus().lastTokenRefreshAt) {
+                        <div class="google-cal-sub">Last token refresh {{ formatDate(googleStatus().lastTokenRefreshAt) }}</div>
+                      }
+                    </div>
+                  </div>
+                  <div class="google-cal-actions">
+                    <button class="btn-secondary" (click)="disconnectGoogle()">Disconnect</button>
+                  </div>
+                </div>
+
+                <div class="google-services-grid">
+                  @for (svc of googleServiceList(); track svc.key) {
+                    <div class="google-service-chip" [class.google-service-chip--missing]="!svc.granted">
+                      @if (svc.granted) {
+                        <span class="svc-check">✓</span> {{ svc.label }}
+                      } @else {
+                        <span class="svc-cross">✗</span> {{ svc.label }} — <span class="svc-permission-required">Permission Required</span>
+                      }
+                    </div>
                   }
                 </div>
-              </div>
-              <div class="google-cal-actions">
-                @if (!googleCalendarStatus().connected) {
-                  <button class="btn-save" [disabled]="connectingGoogle()" (click)="connectGoogleCalendar()">
-                    {{ connectingGoogle() ? 'Redirecting…' : 'Connect Google Calendar' }}
-                  </button>
-                } @else {
-                  <button class="btn-save" [disabled]="syncingGoogle()" (click)="syncGoogleCalendarNow()">
-                    {{ syncingGoogle() ? 'Syncing…' : 'Sync Now' }}
-                  </button>
-                  <button class="btn-secondary" (click)="disconnectGoogleCalendar()">Disconnect</button>
+
+                @if (googleStatus().needsReconnect) {
+                  <div class="google-cal-card">
+                    <div class="google-cal-info">
+                      <div class="google-cal-sub google-cal-warning">Google access was revoked or expired — reconnect to resume all Google Workspace features.</div>
+                    </div>
+                    <div class="google-cal-actions">
+                      <button class="btn-save" [disabled]="connectingGoogle()" (click)="connectGoogle()">
+                        {{ connectingGoogle() ? 'Redirecting…' : 'Reconnect' }}
+                      </button>
+                    </div>
+                  </div>
                 }
-              </div>
-            </div>
+              } @else {
+                <div class="google-cal-card">
+                  <div class="google-cal-info">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z"/>
+                    </svg>
+                    <div>
+                      <strong>Not connected</strong>
+                      <div class="google-cal-sub">Connect once to enable Gmail, Calendar, Google Meet, and Google Tasks for your account.</div>
+                    </div>
+                  </div>
+                  <div class="google-cal-actions">
+                    <button class="btn-save" [disabled]="connectingGoogle()" (click)="connectGoogle()">
+                      {{ connectingGoogle() ? 'Redirecting…' : 'Connect Google' }}
+                    </button>
+                  </div>
+                </div>
+              }
+            } @else {
+              <div class="google-cal-card"><span>Checking connection status…</span></div>
+            }
           </div>
           }
 
@@ -710,6 +760,18 @@ interface TaxCountry {
     .google-cal-info { display: flex; align-items: center; gap: 12px; color: #374151; font-size: 0.85rem; }
     .google-cal-info svg { color: #0F3460; flex-shrink: 0; }
     .google-cal-sub { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
+    .google-cal-warning { color: #b45309; }
+    .status-dot--connected { color: #10b981; }
+    .google-services-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .google-service-chip {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 500;
+      background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;
+    }
+    .google-service-chip--missing { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+    .svc-check { color: #10b981; font-weight: 700; }
+    .svc-cross { color: #ef4444; font-weight: 700; }
+    .svc-permission-required { font-weight: 600; }
     .google-cal-actions { display: flex; gap: 8px; }
     .btn-secondary {
       padding: 9px 18px; border: 1px solid #d1d5db; border-radius: 8px;
@@ -722,10 +784,11 @@ export class SysadminSettingsComponent implements OnInit {
   private readonly http    = inject(HttpClient);
   private readonly auth    = inject(AuthService);
   private readonly cfg     = inject(AppConfigService);
+  private readonly toast   = inject(OToastService);
 
-  activeSection = signal<'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications' | 'calendar'>('license');
+  activeSection = signal<'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications' | 'integrations'>('license');
 
-  setSection(section: 'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications' | 'calendar'): void {
+  setSection(section: 'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications' | 'integrations'): void {
     this.activeSection.set(section);
   }
 
@@ -758,7 +821,41 @@ export class SysadminSettingsComponent implements OnInit {
     registrationNumber: '', businessState: '', requiresBusinessState: false, configJson: ''
   };
 
+  /** Canonical Indian states/UTs — kept identical to the customerState options in
+   * quotes.json/invoices.json so businessState and customerState can only ever match
+   * on an exact, typo-free value, instead of two independently free-typed text fields. */
+  readonly indianStates: string[] = [
+    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat',
+    'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh',
+    'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+    'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh',
+    'Uttarakhand', 'West Bengal', 'Andaman and Nicobar Islands', 'Chandigarh',
+    'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Jammu and Kashmir',
+    'Ladakh', 'Lakshadweep', 'Puducherry'
+  ];
+
   selectedCountry = signal<TaxCountry | null>(null);
+
+  /** Read-only display of the selected country's configured rate(s) — sourced entirely
+   * from tax-countries.json, never hardcoded here. Flat-rate regimes (e.g. VAT) show a
+   * single rate; state-based regimes (e.g. GST) show both the same-state and
+   * different-state components since either can apply depending on the customer. */
+  get taxRateSummary(): string {
+    const country = this.selectedCountry();
+    if (!country) return '';
+
+    const format = (components: { name: string; rate: number }[] | null) =>
+      (components ?? []).map(c => `${c.name} ${c.rate}%`).join(' + ');
+
+    if (country.flatComponents?.length) {
+      return format(country.flatComponents);
+    }
+
+    const sameState = format(country.sameStateComponents);
+    const diffState = format(country.differentStateComponents);
+    if (!sameState && !diffState) return '';
+    return `Same state: ${sameState || '—'}  |  Different state: ${diffState || '—'}`;
+  }
 
   numberingLoading     = signal(true);
   numberingError       = signal<string | null>(null);
@@ -772,10 +869,20 @@ export class SysadminSettingsComponent implements OnInit {
   /** Live read-only counter values, as currently stored — distinct from the editable "starting number" above. */
   numberingCurrent = { quoteNextNumber: 1001, invoiceNextNumber: 1001 };
 
-  googleCalendarStatus = signal<GoogleCalendarStatus>({ connected: false });
+  googleStatus         = signal<GoogleWorkspaceStatus>({ connected: false });
   loadingGoogleStatus  = signal(true);
   connectingGoogle     = signal(false);
-  syncingGoogle        = signal(false);
+
+  /** Drives the "Connected Services" checklist in the Integrations card. */
+  googleServiceList = () => {
+    const services = this.googleStatus().services ?? {};
+    return [
+      { key: 'gmail', label: 'Gmail', granted: !!services.gmail },
+      { key: 'calendar', label: 'Calendar', granted: !!services.calendar },
+      { key: 'meet', label: 'Google Meet (via Calendar)', granted: !!services.meet },
+      { key: 'tasks', label: 'Google Tasks', granted: !!services.tasks }
+    ];
+  };
 
   prefs = {
     currency:    localStorage.getItem('crm_currency')    ?? 'INR',
@@ -847,61 +954,66 @@ export class SysadminSettingsComponent implements OnInit {
     });
 
     this.loadNumbering();
-    this.loadGoogleCalendarStatus();
-    this.handleGoogleCalendarRedirect();
+    this.loadGoogleStatus();
+    this.handleGoogleRedirect();
   }
 
-  private handleGoogleCalendarRedirect(): void {
+  /** Single OAuth connection covers Gmail, Calendar/Meet, and Tasks — one redirect handles all of them. */
+  private handleGoogleRedirect(): void {
     const params = new URLSearchParams(window.location.search);
-    const status = params.get('googleCalendar');
+    const status = params.get('google');
     if (!status) return;
     if (status === 'connected') {
-      this.loadGoogleCalendarStatus();
+      this.loadGoogleStatus();
+      this.toast.addSuccess('Google connected', 'Gmail, Calendar, Meet, and Tasks are now linked.');
+    } else if (status === 'error') {
+      const reason = params.get('reason');
+      const reasonMessages: Record<string, string> = {
+        invalid_state: 'The connection request expired or was tampered with — please try again.',
+        unknown_user: 'Could not identify your CRM account — please log in again and retry.',
+        exchange_failed: 'Google rejected the authorization — please try connecting again.'
+      };
+      const message = (reason && reasonMessages[reason]) || 'Something went wrong while connecting to Google.';
+      this.toast.addError('Google connection failed', message);
     }
     window.history.replaceState({}, '', window.location.pathname);
   }
 
-  loadGoogleCalendarStatus(): void {
+  loadGoogleStatus(): void {
     this.loadingGoogleStatus.set(true);
-    this.http.get<GoogleCalendarStatus>(`${this.cfg.crmApiUrl}/api/v1/calendar/google/oauth/status`, { headers: this.hdrs() })
+    this.http.get<GoogleWorkspaceStatus>(`${this.cfg.crmApiUrl}/api/v1/google/auth/status`, { headers: this.hdrs() })
       .subscribe({
         next: status => {
-          this.googleCalendarStatus.set(status);
+          this.googleStatus.set(status);
           this.loadingGoogleStatus.set(false);
         },
         error: () => {
-          this.googleCalendarStatus.set({ connected: false });
+          this.googleStatus.set({ connected: false });
           this.loadingGoogleStatus.set(false);
         }
       });
   }
 
-  connectGoogleCalendar(): void {
+  connectGoogle(): void {
     this.connectingGoogle.set(true);
-    this.http.get<{ url: string }>(`${this.cfg.crmApiUrl}/api/v1/calendar/google/oauth/url`, { headers: this.hdrs() })
+    this.http.get<{ url: string }>(`${this.cfg.crmApiUrl}/api/v1/google/auth/url`, { headers: this.hdrs() })
       .subscribe({
         next: res => { window.location.href = res.url; },
-        error: () => this.connectingGoogle.set(false)
+        error: () => {
+          this.connectingGoogle.set(false);
+          this.toast.addError('Could not start Google connection', 'Please try again in a moment.');
+        }
       });
   }
 
-  disconnectGoogleCalendar(): void {
-    this.http.post(`${this.cfg.crmApiUrl}/api/v1/calendar/google/oauth/disconnect`, {}, { headers: this.hdrs() })
-      .subscribe({
-        next: () => this.googleCalendarStatus.set({ connected: false }),
-        error: () => {}
-      });
-  }
-
-  syncGoogleCalendarNow(): void {
-    this.syncingGoogle.set(true);
-    this.http.post<any>(`${this.cfg.crmApiUrl}/api/v1/calendar-events/sync/google`, {}, { headers: this.hdrs() })
+  disconnectGoogle(): void {
+    this.http.post(`${this.cfg.crmApiUrl}/api/v1/google/auth/disconnect`, {}, { headers: this.hdrs() })
       .subscribe({
         next: () => {
-          this.syncingGoogle.set(false);
-          this.loadGoogleCalendarStatus();
+          this.googleStatus.set({ connected: false });
+          this.toast.addSuccess('Disconnected', 'Google Workspace has been disconnected.');
         },
-        error: () => this.syncingGoogle.set(false)
+        error: () => this.toast.addError('Disconnect failed', 'Could not disconnect Google. Please try again.')
       });
   }
 

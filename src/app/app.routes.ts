@@ -20,6 +20,16 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/sso/sso').then(m => m.SsoComponent)
   },
   {
+    path: 'terms-of-service',
+    loadComponent: () =>
+      import('./features/legal/terms/terms').then(m => m.TermsComponent)
+  },
+  {
+    path: 'privacy-policy',
+    loadComponent: () =>
+      import('./features/legal/privacy/privacy').then(m => m.PrivacyComponent)
+  },
+  {
     path: 'license-pending',
     loadComponent: () => import('./features/license/license-pending').then(m => m.LicensePendingComponent),
     canActivate: [authGuard]
@@ -98,7 +108,7 @@ export const routes: Routes = [
         path: 'tasks',
         loadComponent: () =>
           import('./features/list-page/list-page').then(m => m.ListPageComponent),
-        data: { resource: 'tasks' }
+        data: { resource: 'google-tasks' }
       },
       {
         path: 'calendar',

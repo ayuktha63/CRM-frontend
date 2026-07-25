@@ -177,9 +177,11 @@
         {
           "name": "customerState",
           "label": "Customer State",
-          "type": "input",
+          "type": "select",
           "colSpan": "col-1",
-          "placeholder": "For GST: same-state vs different-state tax"
+          "placeholder": "For GST: same-state vs different-state tax",
+          "optionsUrl": "/customer-states.json",
+          "optionsScopedByTaxCountry": true
         },
         {
           "name": "dueDate",

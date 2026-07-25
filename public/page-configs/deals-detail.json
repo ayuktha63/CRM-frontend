@@ -117,6 +117,19 @@
       "addLabel": "Create Quote",
       "addApi": "/api/v1/deals/{id}/quotes",
       "addMethod": "auto"
+    },
+    {
+      "key": "invoices",
+      "label": "Invoices",
+      "type": "related-list",
+      "relatedApi": "/api/v1/deals/{id}/invoices",
+      "columns": [
+        { "name": "invoiceNumber", "label": "Invoice #" },
+        { "name": "amount",        "label": "Amount (₹)" },
+        { "name": "dueDate",       "label": "Due Date" },
+        { "name": "createdBy",     "label": "Created By" },
+        { "name": "status",        "label": "Status" }
+      ]
     }
   ]
 }
