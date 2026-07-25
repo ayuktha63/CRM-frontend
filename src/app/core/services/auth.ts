@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { AppConfigService } from './app-config.service';
+import { GoogleWorkspaceStatusService } from './google-workspace-status.service';
 
 interface LoginRequest {
   usernameOrEmail: string;
@@ -27,6 +28,7 @@ interface AuthResponse {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly cfg  = inject(AppConfigService);
+  private readonly googleWorkspaceStatus = inject(GoogleWorkspaceStatusService);
 
   private get apiUrl(): string { return `${this.cfg.crmApiUrl}/api/v1/auth`; }
   private readonly accessTokenKey = 'accessToken';
@@ -80,6 +82,10 @@ export class AuthService {
       sessionStorage.removeItem('graceWarningMessage');
       sessionStorage.removeItem('graceRemainingDays');
     }
+
+    // Each user connects their own Google account — fetch this user's connection
+    // status once at login so Settings/Tasks/Calendar/Email don't each fetch it cold.
+    this.googleWorkspaceStatus.refresh();
   }
 
   getLicenseWarning(): string | null {

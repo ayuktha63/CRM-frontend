@@ -26,7 +26,6 @@ import {
   ReportBuilderComponent,
   ReportsComponent,
   TasksWorkspaceComponent,
-  UserSettingsComponent,
   PageStoreService,
   FormDrawerComponent,
   ConfirmationDialogComponent,
@@ -34,6 +33,7 @@ import {
 } from 'orque-ui';
 import { KanbanComponent } from './kanban';
 import { SysadminSettingsComponent } from '../system-admin/sysadmin-settings';
+import { PersonalSettingsComponent } from '../user-settings/user-settings';
 import { CrmDashboardBuilderComponent } from '../crm-dashboard-builder/crm-dashboard-builder';
 import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -57,7 +57,7 @@ import { AuthService } from '../../core/services/auth';
     ReportBuilderComponent,
     ReportsComponent,
     TasksWorkspaceComponent,
-    UserSettingsComponent,
+    PersonalSettingsComponent,
     SysadminSettingsComponent,
     ConfirmationDialogComponent
   ],
@@ -115,7 +115,7 @@ import { AuthService } from '../../core/services/auth';
         @if (showLicenseSettings()) {
           <app-sysadmin-settings></app-sysadmin-settings>
         } @else {
-          <app-user-settings></app-user-settings>
+          <app-personal-settings></app-personal-settings>
         }
       }
 
