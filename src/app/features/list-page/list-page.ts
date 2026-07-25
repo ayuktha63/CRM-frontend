@@ -25,6 +25,7 @@ import {
   InventoryComponent,
   ReportBuilderComponent,
   ReportsComponent,
+  TasksWorkspaceComponent,
   UserSettingsComponent,
   PageStoreService,
   FormDrawerComponent,
@@ -55,6 +56,7 @@ import { AuthService } from '../../core/services/auth';
     InventoryComponent,
     ReportBuilderComponent,
     ReportsComponent,
+    TasksWorkspaceComponent,
     UserSettingsComponent,
     SysadminSettingsComponent,
     ConfirmationDialogComponent
@@ -99,6 +101,9 @@ import { AuthService } from '../../core/services/auth';
       }
       @else if (resource === 'emails') {
         <app-email-workspace></app-email-workspace>
+      }
+      @else if (resource === 'google-tasks') {
+        <app-tasks-workspace></app-tasks-workspace>
       }
       @else if (resource === 'inventory') {
         <app-inventory></app-inventory>
@@ -804,7 +809,7 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
   isCustomResource(): boolean {
     return [
       'calendar', 'reports', 'report-builder', 'customization',
-      'emails', 'inventory', 'dashboard-builder', 'user-settings'
+      'emails', 'google-tasks', 'inventory', 'dashboard-builder', 'user-settings'
     ].includes(this.resource);
   }
 
