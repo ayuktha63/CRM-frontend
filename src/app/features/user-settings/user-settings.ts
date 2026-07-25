@@ -674,7 +674,7 @@ export class PersonalSettingsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.http.get<any>(`${this.cfg.crmApiUrl}/api/v1/license/status/me`, { headers: this.hdrs() })
+    this.http.get<any>(`${this.cfg.crmApiUrl}/api/v1/license/my-seat`, { headers: this.hdrs() })
       .subscribe({
         next: res => { this.license.set(res); this.licenseLoading.set(false); },
         error: err => {
