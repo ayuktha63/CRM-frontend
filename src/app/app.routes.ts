@@ -83,7 +83,7 @@ export const routes: Routes = [
       {
         path: 'deals/:id',
         loadComponent: () =>
-          import('orque-ui').then(m => m.RecordDetailComponent),
+          import('../app/features/detail-page/detail-page').then(m => m.CrmDetailComponent),
         data: { resource: 'deals' }
       },
       {
