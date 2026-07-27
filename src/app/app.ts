@@ -7,9 +7,7 @@ import { SessionGuardModalComponent } from './core/components/session-guard-moda
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, OToastComponent, SessionGuardModalComponent],
-  template: `<router-outlet /><o-toast /><app-session-guard-modal />`,
-  styles: [`
-    :host { display: block; height: 100%; }
-  `]
+  templateUrl: './app.html',
+  styleUrl: './app.scss'
 })
 export class App {}

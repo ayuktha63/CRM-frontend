@@ -1,0 +1,9 @@
+<div class="sso-shell">
+  @if (error) {
+    <div class="sso-error">{{ error }}</div>
+    <a href="/login" class="sso-back-link">Back to Login</a>
+  } @else {
+    <div class="sso-spinner"></div>
+    <span class="sso-message">Signing you in...</span>
+  }
+</div>

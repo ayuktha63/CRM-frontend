@@ -1,0 +1,58 @@
+.sg-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+  padding: 24px;
+}
+
+.sg-modal {
+  background: var(--crm-card, #fff);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 28px 28px 24px;
+  text-align: center;
+}
+
+.sg-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 10px;
+  color: var(--crm-text-1, #111);
+}
+
+.sg-message {
+  font-size: 0.9rem;
+  color: var(--crm-text-2, #555);
+  margin: 0 0 18px;
+}
+
+.sg-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.sg-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+
+  &--secondary {
+    border: 1px solid var(--crm-border, #ddd);
+    background: none;
+    color: var(--crm-text-1, #111);
+  }
+
+  &--primary {
+    border: none;
+    background: #2563eb;
+    color: #fff;
+  }
+}
