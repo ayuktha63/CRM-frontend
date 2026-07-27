@@ -199,7 +199,7 @@ export const routes: Routes = [
       {
         path: 'system-admin',
         loadComponent: () =>
-          import('./features/system-admin/system-admin').then(m => m.SystemAdminComponent),
+          import('./features/system-admin/system-admin/system-admin').then(m => m.SystemAdminComponent),
         canActivate: [authGuard, adminGuard]
       },
     ]

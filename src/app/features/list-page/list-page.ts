@@ -31,7 +31,7 @@ import {
   ConfirmationDialogComponent,
   ConfirmationDialogType
 } from 'orque-ui';
-import { KanbanComponent } from './kanban';
+import { KanbanComponent } from './kanban/kanban';
 import { SysadminSettingsComponent } from '../system-admin/sysadmin-settings';
 import { PersonalSettingsComponent } from '../user-settings/user-settings';
 import { CrmDashboardBuilderComponent } from '../crm-dashboard-builder/crm-dashboard-builder';

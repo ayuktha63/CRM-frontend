@@ -1,0 +1,117 @@
+<div class="sys-admin-page">
+  <div class="page-header">
+    <h1>System Administration</h1>
+    <p class="subtitle">Manage all organizations on the platform</p>
+  </div>
+
+  <!-- Create organization panel -->
+  <div class="card create-card">
+    <h2>Create Organization</h2>
+    <form [formGroup]="createForm" (ngSubmit)="createOrg()" class="create-form">
+      <div class="form-row">
+        <div class="form-field">
+          <label>Organization Code *</label>
+          <input formControlName="organizationCode" placeholder="e.g. ACME" />
+          @if (createForm.get('organizationCode')?.invalid && createForm.get('organizationCode')?.touched) {
+            <span class="error">Required</span>
+          }
+        </div>
+        <div class="form-field">
+          <label>Organization Name *</label>
+          <input formControlName="organizationName" placeholder="Acme Corp" />
+          @if (createForm.get('organizationName')?.invalid && createForm.get('organizationName')?.touched) {
+            <span class="error">Required</span>
+          }
+        </div>
+        <div class="form-field">
+          <label>Email</label>
+          <input formControlName="email" type="email" placeholder="contact@acme.com" />
+        </div>
+        <div class="form-field">
+          <label>Phone</label>
+          <input formControlName="phone" placeholder="+1 555 000 0000" />
+        </div>
+        <div class="form-field">
+          <label>Country</label>
+          <input formControlName="country" placeholder="US" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" [disabled]="createForm.invalid || creating()">
+          {{ creating() ? 'Creating…' : 'Create Organization' }}
+        </button>
+      </div>
+      @if (createError()) {
+        <p class="error-banner">{{ createError() }}</p>
+      }
+    </form>
+  </div>
+
+  <!-- Organization list -->
+  <div class="card list-card">
+    <div class="list-header">
+      <h2>Organizations ({{ orgs().length }})</h2>
+      <button class="btn-icon" (click)="loadOrgs()" title="Refresh">⟳</button>
+    </div>
+
+    @if (loading()) {
+      <div class="loading">Loading…</div>
+    } @else if (orgs().length === 0) {
+      <div class="empty-state">No organizations found.</div>
+    } @else {
+      <div class="org-table-wrapper">
+        <table class="org-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th>License</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (org of orgs(); track org.id) {
+              <tr [class.suspended]="org.status === 'SUSPENDED'">
+                <td><code>{{ org.id }}</code></td>
+                <td><code>{{ org.organizationCode }}</code></td>
+                <td>{{ org.organizationName }}</td>
+                <td>{{ org.email ?? '—' }}</td>
+                <td>
+                  <span class="status-badge" [class]="'status-' + org.status.toLowerCase()">
+                    {{ org.status }}
+                  </span>
+                </td>
+                <td>
+                  @if (org.license) {
+                    <span class="license-status" [class]="'lic-' + org.license.status.toLowerCase()">
+                      {{ org.license.status }}
+                      @if (org.license.daysRemaining != null) {
+                        <span class="days">({{ org.license.daysRemaining }}d)</span>
+                      }
+                    </span>
+                  } @else {
+                    <span class="no-license">No license</span>
+                  }
+                </td>
+                <td class="actions">
+                  @if (org.status === 'ACTIVE') {
+                    <button class="btn-danger-sm" (click)="suspend(org)" [disabled]="actioning()">
+                      Suspend
+                    </button>
+                  } @else {
+                    <button class="btn-success-sm" (click)="activate(org)" [disabled]="actioning()">
+                      Activate
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
