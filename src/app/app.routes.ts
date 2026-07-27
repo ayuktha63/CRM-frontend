@@ -31,12 +31,12 @@ export const routes: Routes = [
   },
   {
     path: 'license-pending',
-    loadComponent: () => import('./features/license/license-pending').then(m => m.LicensePendingComponent),
+    loadComponent: () => import('./features/license/license-pending/license-pending').then(m => m.LicensePendingComponent),
     canActivate: [authGuard]
   },
   {
     path: 'account-not-activated',
-    loadComponent: () => import('./features/license/account-not-activated').then(m => m.AccountNotActivatedComponent),
+    loadComponent: () => import('./features/license/account-not-activated/account-not-activated').then(m => m.AccountNotActivatedComponent),
     canActivate: [authGuard]
   },
 
