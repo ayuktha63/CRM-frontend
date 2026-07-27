@@ -32,7 +32,7 @@ import {
   ConfirmationDialogType
 } from 'orque-ui';
 import { KanbanComponent } from './kanban/kanban';
-import { SysadminSettingsComponent } from '../system-admin/sysadmin-settings';
+import { SysadminSettingsComponent } from '../system-admin/sysadmin-settings/sysadmin-settings';
 import { PersonalSettingsComponent } from '../user-settings/user-settings';
 import { CrmDashboardBuilderComponent } from '../crm-dashboard-builder/crm-dashboard-builder';
 import { Subscription, forkJoin, of } from 'rxjs';
