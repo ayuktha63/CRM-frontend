@@ -1,0 +1,445 @@
+<div class="settings-page">
+  <div class="settings-header">
+    <h1>Personal Settings</h1>
+    <p>Your personal preferences, license, printing, integrations, and mail history</p>
+  </div>
+
+  <div class="settings-layout">
+    <aside class="settings-sidebar">
+      <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'license'" (click)="setSection('license')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        License Information
+      </button>
+      <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'general'" (click)="setSection('general')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        General Settings
+      </button>
+      <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'notifications'" (click)="setSection('notifications')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        Notifications
+      </button>
+      <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'integrations'" (click)="setSection('integrations')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        Integrations
+      </button>
+      <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'printing'" (click)="setSection('printing')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line>
+        </svg>
+        Document &amp; Printing
+      </button>
+      <button class="settings-nav-btn" [class.settings-nav-btn--active]="activeSection() === 'logs'" (click)="setSection('logs')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        Outbound Mail Logs
+      </button>
+    </aside>
+
+    <main class="settings-content">
+
+      <!-- ── License Information (read-only, auto-loaded) ── -->
+      @if (activeSection() === 'license') {
+      <div class="settings-card">
+        <h2 class="settings-section-title">License Information</h2>
+        <p class="settings-section-desc">Your organization's active CRM license details</p>
+
+        @if (licenseLoading()) {
+          <span class="loading-chip">Loading…</span>
+        } @else {
+          <span class="status-chip" [class.chip-active]="license()?.status === 'ACTIVE' || license()?.status === 'GRACE'"
+                                    [class.chip-expired]="license()?.status === 'EXPIRED'">
+            {{ license()?.status ?? 'Unknown' }}
+          </span>
+        }
+
+        @if (licenseError()) {
+          <div class="info-banner info-warn">{{ licenseError() }}</div>
+        }
+
+        @if (license()) {
+          <div class="info-grid">
+            <div class="info-field">
+              <span class="info-label">Organization</span>
+              <span class="info-value">{{ license()?.organizationName ?? '—' }}</span>
+            </div>
+            <div class="info-field">
+              <span class="info-label">License Name</span>
+              <span class="info-value">{{ license()?.licenseName ?? '—' }}</span>
+            </div>
+            <div class="info-field">
+              <span class="info-label">Expires</span>
+              <span class="info-value">{{ formatDate(license()?.endDate) }}</span>
+            </div>
+            <div class="info-field">
+              <span class="info-label">Days Remaining</span>
+              <span class="info-value" [class.warn-text]="(license()?.daysRemaining ?? 0) < 30">
+                {{ license()?.daysRemaining ?? '—' }}
+              </span>
+            </div>
+            @if (license()?.inGracePeriod) {
+              <div class="info-field">
+                <span class="info-label">Grace Days Left</span>
+                <span class="info-value warn-text">{{ license()?.graceRemaining }}</span>
+              </div>
+            }
+          </div>
+
+          @if (license()?.features?.length) {
+            <div class="features-section">
+              <span class="info-label">Allowed Modules</span>
+              <div class="feature-tags">
+                @for (f of license()!.features; track f) {
+                  <span class="feature-tag">{{ f }}</span>
+                }
+              </div>
+            </div>
+          }
+        }
+      </div>
+      }
+
+      <!-- ── General Settings ── -->
+      @if (activeSection() === 'general') {
+      <div class="settings-card">
+        <h2 class="settings-section-title">General Settings</h2>
+        <p class="settings-section-desc">Your personal display preferences</p>
+
+        <div class="settings-row">
+          <div class="setting-item">
+            <div class="setting-label">
+              <span>Date Format</span>
+              <span class="setting-desc">How dates are displayed for you throughout CRM</span>
+            </div>
+            <select class="setting-select" [(ngModel)]="prefs.dateFormat">
+              <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+              <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+              <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-label">
+              <span>Timezone</span>
+              <span class="setting-desc">Used for reminders and due dates</span>
+            </div>
+            <select class="setting-select" [(ngModel)]="prefs.timezone">
+              <option value="Asia/Kolkata">Asia/Kolkata (IST +5:30)</option>
+              <option value="UTC">UTC</option>
+              <option value="America/New_York">America/New_York (EST)</option>
+              <option value="Europe/London">Europe/London (GMT)</option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-label">
+              <span>Records Per Page</span>
+              <span class="setting-desc">Default number of rows in list views</span>
+            </div>
+            <select class="setting-select" [(ngModel)]="prefs.pageSize">
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section-actions">
+          <button class="btn-save" (click)="savePrefs()" [disabled]="prefsSaving()">
+            {{ prefsSaving() ? 'Saving…' : 'Save Settings' }}
+          </button>
+          @if (prefsSaveSuccess()) {
+            <span class="save-success">✓ Saved</span>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- ── Notifications ── -->
+      @if (activeSection() === 'notifications') {
+      <div class="settings-card">
+        <h2 class="settings-section-title">Notification Preferences</h2>
+        <p class="settings-section-desc">Choose which activities or deal changes should notify you</p>
+
+        @if (settingsLoading()) {
+          <span class="loading-chip">Loading…</span>
+        } @else {
+        <div class="toggle-list">
+          <div class="toggle-item">
+            <div class="toggle-label">
+              <span>New Lead Assigned</span>
+              <span class="setting-desc">Notify me immediately when a new lead is assigned to my ownership</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="settings.notifyLeadAssigned">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="toggle-item">
+            <div class="toggle-label">
+              <span>Deal Stage Changed</span>
+              <span class="setting-desc">Notify me when deals I own transition into Closed Won or Closed Lost</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="settings.notifyDealStageChange">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="toggle-item">
+            <div class="toggle-label">
+              <span>Task Due Reminder</span>
+              <span class="setting-desc">Notify me when tasks assigned to me are reaching their due date</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="settings.notifyTaskDue">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="toggle-item">
+            <div class="toggle-label">
+              <span>Quote Acceptance Alerts</span>
+              <span class="setting-desc">Notify me when a client accepts or rejects one of my sent quotes</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="settings.notifyQuoteApproved">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="toggle-item">
+            <div class="toggle-label">
+              <span>Invoice Paid Alerts</span>
+              <span class="setting-desc">Notify me when an invoice generated from my quote has been marked Paid</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="settings.notifyInvoicePaid">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="toggle-item">
+            <div class="toggle-label">
+              <span>Daily Follow-up Reminders</span>
+              <span class="setting-desc">Notify me about critical customer touchpoints</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="settings.notifyFollowupReminder">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="section-actions">
+          <button class="btn-save" (click)="saveSettings()" [disabled]="settingsSaving()">
+            {{ settingsSaving() ? 'Saving…' : 'Save Settings' }}
+          </button>
+          @if (settingsSaveSuccess()) {
+            <span class="save-success">✓ Saved</span>
+          }
+        </div>
+        }
+      </div>
+      }
+
+      <!-- ── Integrations: Google Workspace (per-user connection) ── -->
+      @if (activeSection() === 'integrations') {
+      <div class="settings-card">
+        <h2 class="settings-section-title">Google Workspace</h2>
+        <p class="settings-section-desc">
+          Connect your own Google account once to automatically integrate Gmail, Calendar, Google Meet, and Google Tasks —
+          no separate connection needed for each service. Each teammate connects their own account separately.
+        </p>
+
+        @if (!googleStatusService.loading()) {
+          @if (googleStatus()?.connected) {
+            <div class="google-cal-card">
+              <div class="google-cal-info">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z"/><path d="m8 12 3 3 5-6"/>
+                </svg>
+                <div>
+                  <strong class="status-dot status-dot--connected">🟢 Connected</strong>
+                  <div class="google-cal-sub">{{ googleStatus()?.email }}</div>
+                  @if (googleStatus()?.lastApiSuccessAt) {
+                    <div class="google-cal-sub">Last successful API call {{ formatDate(googleStatus()?.lastApiSuccessAt) }}</div>
+                  }
+                </div>
+              </div>
+              <div class="google-cal-actions">
+                <button class="btn-secondary" (click)="disconnectGoogle()">Disconnect</button>
+              </div>
+            </div>
+
+            <div class="google-services-grid">
+              @for (svc of googleServiceList(); track svc.key) {
+                <div class="google-service-chip" [class.google-service-chip--missing]="!svc.granted">
+                  @if (svc.granted) {
+                    <span class="svc-check">✓</span> {{ svc.label }}
+                  } @else {
+                    <span class="svc-cross">✗</span> {{ svc.label }} — <span class="svc-permission-required">Permission Required</span>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (googleStatus()?.needsReconnect) {
+              <div class="google-cal-card">
+                <div class="google-cal-info">
+                  <div class="google-cal-sub google-cal-warning">Google access was revoked or expired — reconnect to resume all Google Workspace features.</div>
+                </div>
+                <div class="google-cal-actions">
+                  <button class="btn-save" [disabled]="connectingGoogle()" (click)="connectGoogle()">
+                    {{ connectingGoogle() ? 'Redirecting…' : 'Reconnect' }}
+                  </button>
+                </div>
+              </div>
+            }
+          } @else {
+            <div class="google-cal-card">
+              <div class="google-cal-info">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z"/>
+                </svg>
+                <div>
+                  <strong>Not connected</strong>
+                  <div class="google-cal-sub">Connect once to enable Gmail, Calendar, Google Meet, and Google Tasks for your account.</div>
+                </div>
+              </div>
+              <div class="google-cal-actions">
+                <button class="btn-save" [disabled]="connectingGoogle()" (click)="connectGoogle()">
+                  {{ connectingGoogle() ? 'Redirecting…' : 'Connect Google' }}
+                </button>
+              </div>
+            </div>
+          }
+        } @else {
+          <div class="google-cal-card"><span>Checking connection status…</span></div>
+        }
+      </div>
+      }
+
+      <!-- ── Document & Printing ── -->
+      @if (activeSection() === 'printing') {
+      <div class="settings-card">
+        <h2 class="settings-section-title">Document Numbering</h2>
+        <p class="settings-section-desc">Set by your System Admin under Tax &amp; Billing Settings — applies to every quote and invoice across the whole tenant. Read-only here.</p>
+
+        @if (settingsLoading()) {
+          <span class="loading-chip">Loading…</span>
+        } @else {
+        <div class="info-grid">
+          <div class="info-field">
+            <span class="info-label">Quotation Series Prefix</span>
+            <span class="info-value">{{ settings.quoteSeriesPrefix ?? '—' }}</span>
+          </div>
+          <div class="info-field">
+            <span class="info-label">Next Quotation Number</span>
+            <span class="info-value">{{ settings.quoteNextNumber ?? '—' }}</span>
+          </div>
+          <div class="info-field">
+            <span class="info-label">Invoice Series Prefix</span>
+            <span class="info-value">{{ settings.invoiceSeriesPrefix ?? '—' }}</span>
+          </div>
+          <div class="info-field">
+            <span class="info-label">Next Invoice Number</span>
+            <span class="info-value">{{ settings.invoiceNextNumber ?? '—' }}</span>
+          </div>
+        </div>
+        }
+
+        <h2 class="settings-section-title" style="margin-top: 28px; border-top: 1px dashed #e5e7eb; padding-top: 24px;">Printer Setup</h2>
+        <p class="settings-section-desc">Detect and configure physical or virtual printer connections for direct record printing.</p>
+
+        <div class="settings-row">
+          <div class="setting-item">
+            <div class="setting-label">
+              <span>Default Print Device</span>
+              <span class="setting-desc">
+                @if (!scanningPrinters() && detectedPrinters().length > 0) {
+                  {{ detectedPrinters().length }} printer(s) detected online
+                } @else if (!scanningPrinters()) {
+                  No active print devices found
+                } @else {
+                  Searching local print services… {{ scanProgress() }}%
+                }
+              </span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <select class="setting-select" [(ngModel)]="settings.defaultPrinter" [disabled]="scanningPrinters()">
+                <option value="">-- No Default Printer --</option>
+                @for (pr of detectedPrinters(); track pr) {
+                  <option [value]="pr">{{ pr }}</option>
+                }
+              </select>
+              <button type="button" class="btn-secondary" (click)="startPrinterScan()" [disabled]="scanningPrinters()">
+                {{ scanningPrinters() ? 'Scanning…' : 'Scan' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-actions">
+          <button class="btn-save" (click)="saveSettings()" [disabled]="settingsSaving()">
+            {{ settingsSaving() ? 'Saving…' : 'Save Settings' }}
+          </button>
+          @if (settingsSaveSuccess()) {
+            <span class="save-success">✓ Saved</span>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- ── Outbound Mail Logs ── -->
+      @if (activeSection() === 'logs') {
+      <div class="settings-card">
+        <div class="settings-logs-header">
+          <div>
+            <h2 class="settings-section-title">Outbound Mail Logs</h2>
+            <p class="settings-section-desc">Audit trail of system emails, invoices, and quotes sent from your account.</p>
+          </div>
+          <button class="btn-secondary" (click)="loadLogs()" [disabled]="loadingLogs()">Refresh</button>
+        </div>
+
+        @if (loadingLogs()) {
+          <span class="loading-chip">Fetching email logs…</span>
+        } @else if (emailLogs().length === 0) {
+          <div class="settings-logs-empty">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            <span>No emails sent from your account yet.</span>
+          </div>
+        } @else {
+          <div class="settings-table-wrap">
+            <table class="settings-table">
+              <thead>
+                <tr><th>Recipient</th><th>Subject</th><th>Status</th><th>Sent At</th></tr>
+              </thead>
+              <tbody>
+                @for (log of emailLogs(); track log.id) {
+                  <tr>
+                    <td>{{ log.toEmail }}</td>
+                    <td class="settings-log-subject" [title]="log.subject">{{ log.subject }}</td>
+                    <td><span class="settings-log-status-badge settings-log-status-badge--{{ log.status.toLowerCase() }}">{{ log.status }}</span></td>
+                    <td>{{ log.sentAt | date:'dd MMM yyyy HH:mm' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+      }
+
+    </main>
+  </div>
+</div>

@@ -1,0 +1,74 @@
+<div class="kb-container">
+  <div class="kb-board">
+    @for (col of columns; track col.name) {
+      <div class="kb-column"
+           [class.drag-over]="draggedOverColumn === col.name"
+           (dragover)="onDragOver($event, col.name)"
+           (dragleave)="onDragLeave()"
+           (drop)="onDrop($event, col.name)">
+        <div class="kb-column-header" [style.border-top-color]="col.color">
+          <div class="kb-column-title-group">
+            <span class="kb-column-title">{{ col.label }}</span>
+            <span class="kb-column-badge">{{ getCardsForColumn(col.name).length }}</span>
+          </div>
+        </div>
+
+        <div class="kb-cards-container">
+          @for (item of getCardsForColumn(col.name); track item.id) {
+            <div class="kb-card" 
+                 draggable="true" 
+                 (dragstart)="onDragStart($event, item)">
+              <div class="kb-card-header">
+                <h4 class="kb-card-title">{{ getTitle(item) }}</h4>
+              </div>
+
+              <div class="kb-card-body">
+                @if (item.company || item.account) {
+                  <div class="kb-card-detail">
+                    <strong>Company:</strong> {{ item.company || item.account }}
+                  </div>
+                }
+                @if (item.contact || item.email) {
+                  <div class="kb-card-detail">
+                    <strong>Contact:</strong> {{ item.contact || item.email || item.fullName }}
+                  </div>
+                }
+                @if (item.amount || item.estimatedValue) {
+                  <div class="kb-card-detail kb-amount">
+                    <strong>Value:</strong> ₹{{ item.amount || item.estimatedValue | number:'1.0-0' }}
+                  </div>
+                }
+                @if (item.dueDate || item.expectedCloseDate) {
+                  <div class="kb-card-detail">
+                    <strong>Date:</strong> {{ item.dueDate || item.expectedCloseDate | date:'mediumDate' }}
+                  </div>
+                }
+                @if (item.assignedTo || item.assignedOwner) {
+                  <div class="kb-card-owner">
+                    <span class="kb-owner-avatar">{{ getInitials(item.assignedTo || item.assignedOwner) }}</span>
+                    <span class="kb-owner-name">{{ item.assignedTo || item.assignedOwner }}</span>
+                  </div>
+                }
+              </div>
+
+              <div class="kb-card-actions">
+                <button class="kb-btn kb-btn-edit" (click)="triggerAction('edit', item)">Edit</button>
+                <button class="kb-btn kb-btn-delete" (click)="triggerAction('delete', item)">Delete</button>
+
+                @if (resource === 'deals' && col.name !== 'Closed Won' && col.name !== 'Closed Lost') {
+                  <button class="kb-btn kb-btn-primary" (click)="triggerAction('approve', item)">Won</button>
+                  <button class="kb-btn kb-btn-danger" (click)="triggerAction('reject', item)">Lost</button>
+                }
+                @if (resource === 'tasks' && col.name !== 'COMPLETED') {
+                  <button class="kb-btn kb-btn-primary" (click)="triggerAction('approve', item)">Done</button>
+                }
+              </div>
+            </div>
+          } @empty {
+            <div class="kb-empty">No records</div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

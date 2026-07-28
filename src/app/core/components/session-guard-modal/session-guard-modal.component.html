@@ -1,0 +1,22 @@
+@if (guard.visible()) {
+  <div class="sg-backdrop">
+    <div class="sg-modal">
+      <h2 class="sg-title">Session Interrupted</h2>
+      <p class="sg-message">
+        Your session was ended (terminated or timed out). You have
+        <strong>{{ guard.secondsLeft() }}s</strong> to continue, or you'll be logged out automatically.
+      </p>
+      <div class="sg-actions">
+        <button class="sg-btn sg-btn--secondary" (click)="guard.logoutNow()">
+          Logout
+        </button>
+        <button class="sg-btn sg-btn--primary"
+                (click)="guard.continueSession()"
+                [disabled]="guard.resuming()"
+                [style.opacity]="guard.resuming() ? 0.7 : 1">
+          {{ guard.resuming() ? 'Resuming…' : 'Continue Session' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

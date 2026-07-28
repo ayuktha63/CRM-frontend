@@ -1,0 +1,37 @@
+.sys-admin-page { padding: 24px; max-width: 1200px; margin: 0 auto; }
+.page-header { margin-bottom: 24px; }
+.page-header h1 { font-size: 24px; font-weight: 600; margin: 0; }
+.subtitle { color: var(--text-secondary, #666); margin: 4px 0 0; }
+.card { background: var(--surface, #fff); border-radius: 12px; border: 1px solid var(--border, #e5e7eb); padding: 24px; margin-bottom: 24px; }
+.create-form .form-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.form-field { display: flex; flex-direction: column; gap: 4px; }
+.form-field label { font-size: 12px; font-weight: 500; color: var(--text-secondary, #666); }
+.form-field input { border: 1px solid var(--border, #d1d5db); border-radius: 8px; padding: 8px 12px; font-size: 14px; outline: none; }
+.form-field input:focus { border-color: var(--primary, #0F3460); box-shadow: 0 0 0 2px rgba(15,52,96,.15); }
+.error { color: #ef4444; font-size: 11px; }
+.form-actions { margin-top: 16px; }
+.btn-primary { background: var(--primary, #0F3460); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 500; }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+.error-banner { color: #ef4444; margin-top: 8px; font-size: 13px; }
+.list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.list-header h2 { font-size: 16px; font-weight: 600; margin: 0; }
+.btn-icon { background: none; border: 1px solid var(--border, #e5e7eb); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 16px; }
+.loading, .empty-state { text-align: center; padding: 32px; color: var(--text-secondary, #666); }
+.org-table-wrapper { overflow-x: auto; }
+.org-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.org-table th { text-align: left; padding: 10px 12px; font-size: 12px; font-weight: 600; color: var(--text-secondary, #666); border-bottom: 1px solid var(--border, #e5e7eb); }
+.org-table td { padding: 12px; border-bottom: 1px solid var(--border-light, #f3f4f6); vertical-align: middle; }
+.org-table tr.suspended td { opacity: .6; }
+.status-badge { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; }
+.status-active { background: #dcfce7; color: #166534; }
+.status-suspended { background: #fee2e2; color: #991b1b; }
+.license-status { font-size: 12px; font-weight: 500; }
+.lic-active { color: #166534; }
+.lic-grace { color: #92400e; }
+.lic-expired { color: #991b1b; }
+.no-license { color: var(--text-secondary, #9ca3af); font-size: 12px; font-style: italic; }
+.days { font-weight: 400; margin-left: 4px; }
+.actions { display: flex; gap: 8px; }
+.btn-danger-sm { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.btn-success-sm { background: #dcfce7; color: #166534; border: 1px solid #86efac; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.btn-danger-sm:disabled, .btn-success-sm:disabled { opacity: .5; cursor: not-allowed; }
