@@ -142,15 +142,26 @@
 
           <div class="setting-item">
             <div class="setting-label">
-              <span>Records Per Page</span>
+              <label for="pageSizeInput">Records Per Page</label>
               <span class="setting-desc">Default number of rows in list views</span>
             </div>
-            <select class="setting-select" [(ngModel)]="prefs.pageSize">
-              <option value="10">10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
+            <input
+              id="pageSizeInput"
+              class="setting-select"
+              type="number"
+              min="1"
+              max="500"
+              list="page-size-options"
+              placeholder="e.g. 25"
+              [(ngModel)]="prefs.pageSize"
+              autocomplete="off">
+            <datalist id="page-size-options">
+              <option value="10"></option>
+              <option value="15"></option>
+              <option value="25"></option>
+              <option value="50"></option>
+              <option value="100"></option>
+            </datalist>
           </div>
         </div>
 
