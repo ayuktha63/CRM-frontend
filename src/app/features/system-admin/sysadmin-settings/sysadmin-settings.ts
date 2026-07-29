@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth';
 import { AppConfigService } from '../../../core/services/app-config.service';
+import { PageSizeService } from '../../../core/services/page-size.service';
 import { OToastService } from 'orque-ui';
 
 interface GoogleWorkspaceStatus {
@@ -39,6 +40,7 @@ export class SysadminSettingsComponent implements OnInit {
   private readonly auth    = inject(AuthService);
   private readonly cfg     = inject(AppConfigService);
   private readonly toast   = inject(OToastService);
+  private readonly pageSizeService = inject(PageSizeService);
 
   activeSection = signal<'license' | 'billing' | 'tax' | 'numbering' | 'general' | 'notifications' | 'integrations'>('license');
 
@@ -142,7 +144,7 @@ export class SysadminSettingsComponent implements OnInit {
     currency:    localStorage.getItem('crm_currency')    ?? 'INR',
     dateFormat:  localStorage.getItem('crm_date_format') ?? 'DD/MM/YYYY',
     timezone:    localStorage.getItem('crm_timezone')    ?? 'Asia/Kolkata',
-    pageSize:    localStorage.getItem('crm_page_size')   ?? '25',
+    pageSize:    String(this.pageSizeService.pageSize()),
     notifLeads:   localStorage.getItem('crm_notif_leads')   !== 'false',
     notifDeals:   localStorage.getItem('crm_notif_deals')   !== 'false',
     notifTasks:   localStorage.getItem('crm_notif_tasks')   !== 'false',
@@ -386,7 +388,7 @@ export class SysadminSettingsComponent implements OnInit {
     localStorage.setItem('crm_currency',    this.prefs.currency);
     localStorage.setItem('crm_date_format', this.prefs.dateFormat);
     localStorage.setItem('crm_timezone',    this.prefs.timezone);
-    localStorage.setItem('crm_page_size',   this.prefs.pageSize);
+    this.pageSizeService.set(Number(this.prefs.pageSize));
     localStorage.setItem('crm_notif_leads',   String(this.prefs.notifLeads));
     localStorage.setItem('crm_notif_deals',   String(this.prefs.notifDeals));
     localStorage.setItem('crm_notif_tasks',   String(this.prefs.notifTasks));

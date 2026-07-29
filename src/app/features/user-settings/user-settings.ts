@@ -5,6 +5,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth';
 import { AppConfigService } from '../../core/services/app-config.service';
 import { GoogleWorkspaceStatusService } from '../../core/services/google-workspace-status.service';
+import { PageSizeService } from '../../core/services/page-size.service';
 import { OToastService } from 'orque-ui';
 
 interface PersonalSettings {
@@ -45,6 +46,7 @@ export class PersonalSettingsComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly cfg = inject(AppConfigService);
   private readonly toast = inject(OToastService);
+  private readonly pageSizeService = inject(PageSizeService);
   readonly googleStatusService = inject(GoogleWorkspaceStatusService);
 
   activeSection = signal<'license' | 'general' | 'notifications' | 'integrations' | 'printing' | 'logs'>('license');
@@ -66,7 +68,7 @@ export class PersonalSettingsComponent implements OnInit {
   prefs = {
     dateFormat: localStorage.getItem('crm_date_format') ?? 'DD/MM/YYYY',
     timezone: localStorage.getItem('crm_timezone') ?? 'Asia/Kolkata',
-    pageSize: localStorage.getItem('crm_page_size') ?? '25'
+    pageSize: String(this.pageSizeService.pageSize())
   };
 
   detectedPrinters = signal<string[]>([]);
@@ -243,7 +245,7 @@ export class PersonalSettingsComponent implements OnInit {
     this.prefsSaving.set(true);
     localStorage.setItem('crm_date_format', this.prefs.dateFormat);
     localStorage.setItem('crm_timezone', this.prefs.timezone);
-    localStorage.setItem('crm_page_size', this.prefs.pageSize);
+    this.pageSizeService.set(Number(this.prefs.pageSize));
     setTimeout(() => {
       this.prefsSaving.set(false);
       this.prefsSaveSuccess.set(true);
