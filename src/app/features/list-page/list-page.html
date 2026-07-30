@@ -58,7 +58,7 @@
   @else if (page && !error) {
     <div class="lp-workspace-wrapper" style="position: relative; padding-bottom: 80px;">
       @if (viewMode === 'table') {
-          <o-page-renderer [page]="page" [data]="data" [userRole]="auth.getRole() || ''" [pageSize]="pageSize()" (actionTriggered)="handleAction($event)" (selectionChange)="onSelectionChanged($event)"></o-page-renderer>
+          <o-page-renderer [page]="page" [data]="data" [userRole]="auth.getRole() || ''" (actionTriggered)="handleAction($event)" (selectionChange)="onSelectionChanged($event)"></o-page-renderer>
       } @else {
         <app-kanban [resource]="resource" [data]="data" (action)="handleAction($event)"></app-kanban>
         <o-form-drawer

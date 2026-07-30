@@ -5,13 +5,14 @@ import { ORQUE_API_URL } from 'orque-ui';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { editInterceptInterceptor } from './core/interceptors/edit-intercept.interceptor';
 import { AppConfigService } from './core/services/app-config.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, editInterceptInterceptor])),
     provideAppInitializer(() => inject(AppConfigService).load()),
     { provide: ORQUE_API_URL, useFactory: (cfg: AppConfigService) => cfg.crmApiUrl, deps: [AppConfigService] }
   ]

@@ -1,0 +1,13 @@
+<app-record-detail />
+
+<o-form-drawer
+  [open]="drawerOpen()"
+  [title]="drawerTitle()"
+  [steps]="drawerSteps()"
+  [rowData]="drawerRowData()"
+  [showSubmit]="false"
+  [readOnly]="false"
+  [actionType]="'edit'"
+  (closeDrawer)="onDrawerClose()"
+  (save)="onDrawerSave($event)">
+</o-form-drawer>

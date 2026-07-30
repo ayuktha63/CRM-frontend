@@ -39,7 +39,6 @@ import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { AppConfigService } from '../../core/services/app-config.service';
 import { AuthService } from '../../core/services/auth';
-import { PageSizeService } from '../../core/services/page-size.service';
 
 @Component({
   selector: 'app-list-page',
@@ -216,8 +215,6 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
   private readonly store = inject(PageStoreService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly toast = inject(OToastService);
-  private readonly pageSizeService = inject(PageSizeService);
-  readonly pageSize = this.pageSizeService.pageSize;
 
   // In-app confirmation dialog (replaces window.confirm)
   confirmState = signal<{
