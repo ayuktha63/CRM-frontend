@@ -21,6 +21,7 @@ import {
   OToastService,
   CalendarWorkspaceComponent,
   CustomizationComponent,
+  DashboardBuilderComponent,
   EmailWorkspaceComponent,
   InventoryComponent,
   ReportBuilderComponent,
@@ -34,7 +35,6 @@ import {
 import { KanbanComponent } from './kanban/kanban';
 import { SysadminSettingsComponent } from '../system-admin/sysadmin-settings/sysadmin-settings';
 import { PersonalSettingsComponent } from '../user-settings/user-settings';
-import { CrmDashboardBuilderComponent } from '../crm-dashboard-builder/crm-dashboard-builder';
 import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { AppConfigService } from '../../core/services/app-config.service';
@@ -52,7 +52,7 @@ import { PageSizeService } from '../../core/services/page-size.service';
     KanbanComponent,
     CalendarWorkspaceComponent,
     CustomizationComponent,
-    CrmDashboardBuilderComponent,
+    DashboardBuilderComponent,
     EmailWorkspaceComponent,
     InventoryComponent,
     ReportBuilderComponent,

@@ -3,5 +3,20 @@
   "title": "System Customization",
   "store": "CustomizationStore",
   "api": "/api/v1/customization",
-  "tableTool": { "add": false, "edit": false, "refresh": true, "export": false, "print": false }
+  "tableTool": { "add": false, "edit": false, "refresh": true, "export": false, "print": false },
+  "customizationConfig": {
+    "systemModules": [
+      { "name": "leads", "label": "Leads" },
+      { "name": "contacts", "label": "Contacts" },
+      { "name": "accounts", "label": "Accounts" },
+      { "name": "deals", "label": "Deals" },
+      { "name": "activities", "label": "Activities" },
+      { "name": "tasks", "label": "Tasks" },
+      { "name": "products", "label": "Products" },
+      { "name": "quotes", "label": "Quotes" },
+      { "name": "invoices", "label": "Invoices" },
+      { "name": "campaigns", "label": "Campaigns" }
+    ],
+    "fieldTypes": ["TEXT", "NUMBER", "CURRENCY", "PHONE", "EMAIL", "DATE", "DATETIME", "DROPDOWN", "CHECKBOX", "FORMULA", "AUTO_NUMBER", "LOOKUP"]
+  }
 }

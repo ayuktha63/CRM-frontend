@@ -3,5 +3,105 @@
   "title": "Inventory Control",
   "store": "InventoryStore",
   "api": "/api/v1/inventory",
-  "tableTool": { "add": true, "edit": true, "refresh": true, "export": true, "print": true }
+  "tableTool": { "add": true, "edit": true, "refresh": true, "export": true, "print": true },
+  "inventoryConfig": {
+    "basePath": "/api/v1/inventory",
+    "tabs": [
+      {
+        "key": "vendors",
+        "label": "Vendors",
+        "apiPath": "vendors",
+        "icon": "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0",
+        "emptyMessage": "No vendors yet. Click \"Add Record\" to create one.",
+        "columns": [
+          { "name": "companyName", "label": "Company" },
+          { "name": "contactName", "label": "Contact" },
+          { "name": "email", "label": "Email" },
+          { "name": "phone", "label": "Phone" },
+          { "name": "status", "label": "Status", "pipe": "status" }
+        ],
+        "formFields": [
+          { "name": "companyName", "label": "Company Name", "placeholder": "Acme Corp", "defaultValue": "" },
+          { "name": "contactName", "label": "Contact Name", "group": 1, "defaultValue": "" },
+          { "name": "email", "label": "Email", "inputType": "email", "group": 1, "defaultValue": "" },
+          { "name": "phone", "label": "Phone", "group": 2, "defaultValue": "" },
+          { "name": "status", "label": "Status", "type": "select", "group": 2, "defaultValue": "ACTIVE",
+            "options": [ { "label": "Active", "value": "ACTIVE" }, { "label": "Inactive", "value": "INACTIVE" } ] },
+          { "name": "address", "label": "Address", "defaultValue": "" }
+        ]
+      },
+      {
+        "key": "price-books",
+        "label": "Price Books",
+        "apiPath": "price-books",
+        "icon": "M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6",
+        "emptyMessage": "No price books yet.",
+        "columns": [
+          { "name": "name", "label": "Name" },
+          { "name": "description", "label": "Description" },
+          { "name": "active", "label": "Active", "pipe": "active" }
+        ],
+        "formFields": [
+          { "name": "name", "label": "Name", "placeholder": "Retail Price Book", "defaultValue": "" },
+          { "name": "description", "label": "Description", "defaultValue": "" },
+          { "name": "active", "label": "Active", "type": "hidden", "defaultValue": true }
+        ]
+      },
+      {
+        "key": "warehouses",
+        "label": "Warehouses",
+        "apiPath": "warehouses",
+        "icon": "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z",
+        "emptyMessage": "No warehouses yet.",
+        "columns": [
+          { "name": "name", "label": "Name" },
+          { "name": "location", "label": "Location" }
+        ],
+        "formFields": [
+          { "name": "name", "label": "Warehouse Name", "placeholder": "Main Warehouse", "defaultValue": "" },
+          { "name": "location", "label": "Location", "placeholder": "Chennai, TN", "defaultValue": "" }
+        ]
+      },
+      {
+        "key": "purchase-orders",
+        "label": "Purchase Orders",
+        "apiPath": "purchase-orders",
+        "icon": "M16 11c0 2.209-1.791 4-4 4s-4-1.791-4-4 1.791-4 4-4 4 1.791 4 4zM5 20c0-3.314 3.134-6 7-6s7 2.686 7 6",
+        "emptyMessage": "No purchase orders yet.",
+        "columns": [
+          { "name": "poNumber", "label": "PO Number" },
+          { "name": "vendorId", "label": "Vendor ID", "pipe": "id-ref" },
+          { "name": "amount", "label": "Amount", "pipe": "currency" },
+          { "name": "status", "label": "Status", "pipe": "status" }
+        ],
+        "formFields": [
+          { "name": "poNumber", "label": "PO Number", "placeholder": "PO-2025-001", "group": 1, "defaultValue": "" },
+          { "name": "vendorId", "label": "Vendor ID", "inputType": "number", "group": 1, "defaultValue": 0 },
+          { "name": "amount", "label": "Amount (₹)", "inputType": "number", "group": 2, "defaultValue": 0 },
+          { "name": "status", "label": "Status", "type": "select", "group": 2, "defaultValue": "DRAFT",
+            "options": [ { "label": "Draft", "value": "DRAFT" }, { "label": "Ordered", "value": "ORDERED" }, { "label": "Received", "value": "RECEIVED" } ] }
+        ]
+      },
+      {
+        "key": "sales-orders",
+        "label": "Sales Orders",
+        "apiPath": "sales-orders",
+        "icon": "M9 14l-4-4 4-4M15 14l4-4-4-4",
+        "emptyMessage": "No sales orders yet.",
+        "columns": [
+          { "name": "soNumber", "label": "SO Number" },
+          { "name": "dealId", "label": "Deal ID", "pipe": "id-ref" },
+          { "name": "amount", "label": "Amount", "pipe": "currency" },
+          { "name": "status", "label": "Status", "pipe": "status" }
+        ],
+        "formFields": [
+          { "name": "soNumber", "label": "SO Number", "placeholder": "SO-2025-001", "group": 1, "defaultValue": "" },
+          { "name": "dealId", "label": "Deal ID", "inputType": "number", "group": 1, "defaultValue": 0 },
+          { "name": "amount", "label": "Amount (₹)", "inputType": "number", "group": 2, "defaultValue": 0 },
+          { "name": "status", "label": "Status", "type": "select", "group": 2, "defaultValue": "DRAFT",
+            "options": [ { "label": "Draft", "value": "DRAFT" }, { "label": "Approved", "value": "APPROVED" }, { "label": "Shipped", "value": "SHIPPED" }, { "label": "Delivered", "value": "DELIVERED" } ] }
+        ]
+      }
+    ]
+  }
 }

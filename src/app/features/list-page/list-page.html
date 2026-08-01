@@ -27,13 +27,13 @@
     <app-calendar-workspace></app-calendar-workspace>
   }
   @else if (resource === 'reports') {
-    <app-reports></app-reports>
+    <app-reports [page]="page"></app-reports>
   }
   @else if (resource === 'report-builder') {
     <app-report-builder></app-report-builder>
   }
   @else if (resource === 'customization') {
-    <app-customization></app-customization>
+    <app-customization [page]="page"></app-customization>
   }
   @else if (resource === 'emails') {
     <app-email-workspace></app-email-workspace>
@@ -42,10 +42,10 @@
     <app-tasks-workspace></app-tasks-workspace>
   }
   @else if (resource === 'inventory') {
-    <app-inventory></app-inventory>
+    <app-inventory [page]="page"></app-inventory>
   }
   @else if (resource === 'dashboard-builder') {
-    <app-crm-dashboard-builder></app-crm-dashboard-builder>
+    <o-dashboard-builder [page]="page"></o-dashboard-builder>
   }
   @else if (resource === 'user-settings') {
     @if (showLicenseSettings()) {
