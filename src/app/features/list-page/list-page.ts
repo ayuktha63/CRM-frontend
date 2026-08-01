@@ -18,6 +18,7 @@ import {
   PageRendererComponent,
   PageAction,
   PageConfig,
+  FormField,
   OToastService,
   CalendarWorkspaceComponent,
   CustomizationComponent,
@@ -304,6 +305,11 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
+  /** Names of fields added via Customization > Fields for the current resource — set by
+   *  mergeCustomFields() and consulted on save to split custom-field values out of the
+   *  form payload before they're posted to the (unrelated) module save endpoint. */
+  private customFieldNames = new Set<string>();
+
   private loadPage(): void {
     this.selectedRow = null;
     this.selectedBulkRows = [];
@@ -311,21 +317,36 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
     this.error = null;
     this.page = null;
     this.data = [];
+    this.customFieldNames = new Set<string>();
     this.cdr.markForCheck();
 
     const sub = this.store.getPageConfig(this.resource).subscribe({
       next: (config: PageConfig) => {
-        this.page = config;
         // Initialise the status tab to the JSON-defined default (the element with isDefault:true, or first element)
         if (config.toggleButton?.elements?.length) {
           const def = config.toggleButton.elements.find((e: any) => e.isDefault) ?? config.toggleButton.elements[0];
           this.activeStatusTab.set(def.value ?? 'All');
         }
-        this.cdr.markForCheck();
         if (this.isCustomResource()) {
+          this.page = config;
+          this.cdr.markForCheck();
           this.loadCustomResource();
         } else {
-          this.loadData(config.api);
+          // Tenant-scoped custom fields (added via Customization > Fields) get merged
+          // into this module's table columns and edit form here, every time the screen
+          // loads — the backend already scopes /metadata/fields/{module} to the caller's
+          // organization, so a different tenant never sees another tenant's fields.
+          // The Layout Builder's saved order/visibility (if any) is applied on top.
+          forkJoin({
+            customFields: this.http.get<any[]>(`${this.base}/api/v1/metadata/fields/${this.resource}`, { headers: this.hdrs() })
+              .pipe(catchError(() => of([]))),
+            layout: this.http.get<{ name: string; visible: boolean }[]>(`${this.base}/api/v1/metadata/layouts/${this.resource}`, { headers: this.hdrs() })
+              .pipe(catchError(() => of([])))
+          }).subscribe(({ customFields, layout }) => {
+            this.page = this.mergeCustomFields(config, customFields ?? [], layout ?? []);
+            this.cdr.markForCheck();
+            this.loadData(config.api);
+          });
         }
       },
       error: (err) => {
@@ -335,6 +356,70 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
       }
     });
     this._subs.add(sub);
+  }
+
+  /** Returns a copy of `config` with each Customization-defined field appended as both
+   *  a table column and a form field, without mutating the cached PageConfig (so a
+   *  second visit to the same resource doesn't double-append onto the cached arrays).
+   *  `layout`, if present, is the Layout Builder's saved order/visibility for this
+   *  module — fields marked hidden there are left out of both the table and the form
+   *  entirely, and the rest follow the saved order rather than raw field-creation order. */
+  private mergeCustomFields(config: PageConfig, customFields: any[], layout: { name: string; visible: boolean }[]): PageConfig {
+    let ordered = customFields;
+    if (layout.length > 0) {
+      const byName = new Map(customFields.map(f => [f.name, f]));
+      const fromLayout: any[] = [];
+      for (const entry of layout) {
+        const field = byName.get(entry.name);
+        if (field && entry.visible !== false) {
+          fromLayout.push(field);
+          byName.delete(entry.name);
+        } else {
+          byName.delete(entry.name);
+        }
+      }
+      // Fields created after the layout was last saved aren't in it yet — show them
+      // (visible by default) appended at the end, same as the Layout Builder itself does.
+      ordered = [...fromLayout, ...byName.values()];
+    }
+
+    this.customFieldNames = new Set(customFields.map(f => f.name));
+    if (ordered.length === 0) return config;
+
+    const extraColumns = ordered.map(f => ({
+      name: f.name,
+      label: f.label,
+      isHeaderView: true,
+      columnView: true
+    }));
+
+    const extraFormFields: FormField[] = ordered.map(f => ({
+      name: f.name,
+      label: f.label,
+      type: (f.type === 'CHECKBOX' ? 'select' : 'input') as FormField['type'],
+      inputType: f.type === 'NUMBER' || f.type === 'CURRENCY' ? 'number'
+        : f.type === 'DATE' ? 'date' : f.type === 'EMAIL' ? 'email' : 'text',
+      required: !!f.isRequired,
+      isDisabled: !!f.isReadonly,
+      isView: true,
+      options: f.type === 'DROPDOWN' && f.selectOptions
+        ? f.selectOptions.split(',').map((o: string) => ({ label: o.trim(), value: o.trim() }))
+        : f.type === 'CHECKBOX'
+          ? [{ label: 'Yes', value: 'true' }, { label: 'No', value: 'false' }]
+          : undefined
+    }));
+
+    const steps = config.steps?.length ? [...config.steps] : [];
+    if (steps.length > 0) {
+      const lastIndex = steps.length - 1;
+      steps[lastIndex] = { ...steps[lastIndex], fields: [...steps[lastIndex].fields, ...extraFormFields] };
+    }
+
+    return {
+      ...config,
+      tableList: [...(config.tableList ?? []), ...extraColumns],
+      steps
+    };
   }
 
   private loadData(api: string): void {
@@ -358,6 +443,7 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
         }
         this.loading = false;
         this.cdr.markForCheck();
+        this.mergeCustomFieldValues();
       },
       error: (err) => {
         this.error = `Failed to load data: ${err.message}`;
@@ -367,6 +453,55 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
       }
     });
     this._subs.add(sub);
+  }
+
+  /** Splits any Customization-defined field values out of a just-saved record's form
+   *  payload and persists them separately — the module's own save endpoint (Lead,
+   *  Contact, …) doesn't know about them, they live in the generic metadata store. */
+  private saveCustomFieldValues(recordId: number | string | undefined, payload: any): void {
+    if (!recordId || this.customFieldNames.size === 0 || !payload) return;
+    const values: Record<string, any> = {};
+    for (const name of this.customFieldNames) {
+      if (payload[name] !== undefined) values[name] = payload[name];
+    }
+    if (Object.keys(values).length === 0) return;
+    this.http.post(
+      `${this.base}/api/v1/metadata/field-values/${this.resource}/${recordId}`,
+      values,
+      { headers: this.hdrs() }
+    ).pipe(catchError(() => of(null))).subscribe();
+  }
+
+  /** Fetches saved custom-field values for every row currently on screen and merges
+   *  them in, so the columns appended in mergeCustomFields() actually show data instead
+   *  of rendering blank. Skipped for resources with no custom fields defined.
+   *
+   *  Builds a *new* `data` array (and new row objects) rather than mutating rows/data
+   *  in place — PageRendererComponent/o-table only recompute their rendered rows from
+   *  their `[data]`/`[rows]` @Input on a reference change (OnChanges), so mutating the
+   *  existing objects left the merged values invisible until some unrelated click forced
+   *  those child components to re-run their own change detection. */
+  private mergeCustomFieldValues(): void {
+    if (this.customFieldNames.size === 0 || this.data.length === 0) return;
+    const ids = this.data.map(r => r.id).filter(id => id != null);
+    if (ids.length === 0) return;
+
+    this.http.get<Record<string, Record<string, string>>>(
+      `${this.base}/api/v1/metadata/field-values/${this.resource}`,
+      { headers: this.hdrs(), params: { ids: ids.join(',') } }
+    ).pipe(catchError(() => of({}))).subscribe(valuesByRecordId => {
+      this.data = this.data.map(row => {
+        const values = (valuesByRecordId as Record<string, Record<string, string>>)[row.id];
+        return values ? { ...row, ...values } : row;
+      });
+      if (this.selectedRow) {
+        this.selectedRow = this.data.find(r => r.id === this.selectedRow.id) ?? this.selectedRow;
+      }
+      if (this.previewRecord) {
+        this.previewRecord = this.data.find(r => r.id === this.previewRecord.id) ?? this.previewRecord;
+      }
+      this.cdr.markForCheck();
+    });
   }
 
   private loadCustomResource(): void {
@@ -414,8 +549,9 @@ export class ListPageComponent implements OnInit, OnChanges, OnDestroy {
           ? this.store.put(`${base}/${payloadId}`, event.payload)
           : this.store.post(base, event.payload);
         const sub = obs.subscribe({
-          next: () => {
+          next: (saved) => {
             this.toast.addSuccess('Saved', `${label} saved successfully.`);
+            this.saveCustomFieldValues(saved?.id ?? payloadId, event.payload);
             this.loadData(this.page!.api);
           },
           error: (err) => this.showError(`Save failed: ${err?.error?.message || err.message}`)
