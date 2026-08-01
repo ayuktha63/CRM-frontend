@@ -19,7 +19,7 @@
     "@angular/forms": "22.0.5",
     "@angular/platform-browser": "22.0.5",
     "@angular/router": "22.0.5",
-    "orque-ui": "^0.0.23",
+    "orque-ui": "^0.0.24",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
