@@ -33,7 +33,7 @@
     <app-report-builder></app-report-builder>
   }
   @else if (resource === 'customization') {
-    <app-customization></app-customization>
+    <app-customization [page]="page"></app-customization>
   }
   @else if (resource === 'emails') {
     <app-email-workspace></app-email-workspace>
