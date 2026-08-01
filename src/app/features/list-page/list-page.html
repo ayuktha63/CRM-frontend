@@ -45,7 +45,7 @@
     <app-inventory></app-inventory>
   }
   @else if (resource === 'dashboard-builder') {
-    <app-crm-dashboard-builder></app-crm-dashboard-builder>
+    <o-dashboard-builder [page]="page"></o-dashboard-builder>
   }
   @else if (resource === 'user-settings') {
     @if (showLicenseSettings()) {
