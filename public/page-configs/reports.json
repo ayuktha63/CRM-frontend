@@ -3,5 +3,42 @@
   "title": "Reports & Metrics",
   "store": "ReportStore",
   "api": "/api/v1/reports",
-  "tableTool": { "add": false, "edit": false, "refresh": true, "export": true, "print": true }
+  "tableTool": { "add": false, "edit": false, "refresh": true, "export": true, "print": true },
+  "reportsConfig": {
+    "dataSources": {
+      "deals": "/api/v1/deals",
+      "leads": "/api/v1/leads",
+      "contacts": "/api/v1/contacts",
+      "quotes": "/api/v1/quotes",
+      "invoices": "/api/v1/invoices",
+      "sessions": "/api/v1/sessions/stats"
+    },
+    "ownerFields": ["owner", "assignedTo", "createdBy"],
+    "kpis": [
+      { "key": "totalRevenue", "title": "Total Revenue", "color": "#0F3460",
+        "iconPath": "M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" },
+      { "key": "pipelineValue", "title": "Pipeline Value", "color": "#16A34A",
+        "iconPath": "M22 12h-6l-2 3h-4l-2-3H2" },
+      { "key": "winRate", "title": "Win Rate", "color": "#0EA5E9",
+        "iconPath": "M9 11l3 3L22 4" },
+      { "key": "leadConversion", "title": "Lead Conversion", "color": "#F59E0B",
+        "iconPath": "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0 0" },
+      { "key": "quotesAccepted", "title": "Quotes Accepted", "color": "#7C3AED",
+        "iconPath": "M14 2H6a2 2 0 0 0-2 2v16h14V8zM14 2v6h6" },
+      { "key": "invoiceValue", "title": "Invoice Value", "color": "#EF4444",
+        "iconPath": "M2 5h20v14H2zM2 10h20" },
+      { "key": "totalContacts", "title": "Total Contacts", "color": "#0EA5E9",
+        "iconPath": "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" },
+      { "key": "activeSessions", "title": "Active Sessions", "color": "#0F3460",
+        "iconPath": "M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zM12 6v6l4 2" }
+    ],
+    "stages": [
+      { "label": "Prospecting", "keywords": ["prospecting"], "color": "#CBD5E1" },
+      { "label": "Qualification", "keywords": ["qualification"], "color": "#93C5FD" },
+      { "label": "Proposal", "keywords": ["proposal"], "color": "#60A5FA" },
+      { "label": "Negotiation", "keywords": ["negotiation"], "color": "#0F3460" },
+      { "label": "Closed Won", "keywords": ["won"], "color": "#16A34A" },
+      { "label": "Closed Lost", "keywords": ["lost"], "color": "#EF4444" }
+    ]
+  }
 }

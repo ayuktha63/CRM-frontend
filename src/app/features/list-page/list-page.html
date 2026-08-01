@@ -27,7 +27,7 @@
     <app-calendar-workspace></app-calendar-workspace>
   }
   @else if (resource === 'reports') {
-    <app-reports></app-reports>
+    <app-reports [page]="page"></app-reports>
   }
   @else if (resource === 'report-builder') {
     <app-report-builder></app-report-builder>
