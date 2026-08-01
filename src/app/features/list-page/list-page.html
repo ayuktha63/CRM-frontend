@@ -42,7 +42,7 @@
     <app-tasks-workspace></app-tasks-workspace>
   }
   @else if (resource === 'inventory') {
-    <app-inventory></app-inventory>
+    <app-inventory [page]="page"></app-inventory>
   }
   @else if (resource === 'dashboard-builder') {
     <o-dashboard-builder [page]="page"></o-dashboard-builder>
